@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Ernährungs-Tool · Stephanie Meurer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;600&family=DM+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body { background: #111; color: #f0ece4; font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ─── PROFILE & CALCULATIONS ──────────────────────────────────────────────────
+
+const PROFILE = { weight:100, height:178, age:59, bodyFat:46.6, leanMass:54.92 };
+const DEFICIT = 300;
+
+const calcBMR = lm => 370 + 21.6 * lm;
+const calcTDEE = (bmr, isTrain) => Math.round(bmr * (isTrain ? 1.55 : 1.35));
+
+function calcMacros(weight, totalKcal) {
+  const protein = Math.round(weight * 1.9);
+  const fat = Math.round((totalKcal * 0.25) / 9);
+  const carbs = Math.max(0, Math.round((totalKcal - protein * 4 - fat * 9) / 4));
+  return { protein, fat, carbs };
+}
+
+function getMeals(trainingTime, isTrain) {
+  if (!isTrain) return [
+    { label:"Frühstück", time:"08:00", icon:"🌅", kP:.28, pP:.28, cP:.20, fP:.28, note:"Protein-betont. KH moderat." },
+    { label:"Mittagessen", time:"12:30", icon:"🌿", kP:.32, pP:.32, cP:.30, fP:.32, note:"Größte Mahlzeit. Ausgewogen." },
+    { label:"Nachmittagssnack", time:"16:00", icon:"🫐", kP:.15, pP:.15, cP:.20, fP:.10, note:"Klein. Protein + Fett." },
+    { label:"Abendessen", time:"19:00", icon:"🌙", kP:.25, pP:.25, cP:.30, fP:.30, note:"Protein + Fett. Wenig KH." },
+  ];
+  if (trainingTime === "08:00") return [
+    { label:"Pre-Workout", time:"07:15", icon:"⚡", kP:.22, pP:.18, cP:.40, fP:.12, note:"Leicht, KH-betont. Keine schweren Fette." },
+    { label:"Post-Workout", time:"09:30", icon:"💪", kP:.30, pP:.32, cP:.30, fP:.18, note:"Wichtigste Mahlzeit. Protein + KH." },
+    { label:"Mittagessen", time:"13:00", icon:"🌿", kP:.28, pP:.28, cP:.20, fP:.35, note:"Ausgewogen." },
+    { label:"Abendessen", time:"18:30", icon:"🌙", kP:.20, pP:.22, cP:.10, fP:.35, note:"Casein-reich. Wenig KH." },
+  ];
+  return [
+    { label:"Frühstück", time:"08:00", icon:"🌅", kP:.22, pP:.22, cP:.25, fP:.20, note:"Protein + moderate KH." },
+    { label:"Pre-Workout", time:"12:30", icon:"⚡", kP:.28, pP:.22, cP:.40, fP:.12, note:"2h vor Training. KH-betont." },
+    { label:"Post-Workout", time:"16:00", icon:"💪", kP:.28, pP:.30, cP:.25, fP:.18, note:"Protein + KH innerhalb 2h." },
+    { label:"Abendessen", time:"19:30", icon:"🌙", kP:.22, pP:.26, cP:.10, fP:.50, note:"Casein-reich. Keine KH." },
+  ];
+}
+
+// ─── RECIPES ─────────────────────────────────────────────────────────────────
+
+const RECIPES = [
+  { name:"Griechischer Joghurt Bowl", meal:"Frühstück / Post-Workout", time:"5 min", kcal:420, protein:48, carbs:32, fat:9, icon:"🥛",
+    ingredients:["300g Magerquark (36g P)","150g griechischer Joghurt 0% (13g P)","1 Messlöffel Whey Vanilla (20g P)","80g Beeren (KH)","1 EL Leinsamen (Fett + Omega-3)"],
+    tip:"Quark + Joghurt = langsames Casein für lang anhaltende Aminosäureversorgung. Ideal nach dem 08:00 Training." },
+  { name:"Hüttenkäse-Lachs-Wrap", meal:"Mittagessen", time:"10 min", kcal:480, protein:52, carbs:28, fat:14, icon:"🐟",
+    ingredients:["200g Hüttenkäse (22g P)","150g Räucherlachs (30g P)","2 Vollkorn-Wraps (KH)","Gurke, Rucola","1 TL Olivenöl"],
+    tip:"Lachs liefert Omega-3 — wichtig für Entzündungsregulation bei intensivem Training." },
+  { name:"Hähnchen-Bowl mit Linsen", meal:"Mittag / Abendessen", time:"20 min", kcal:520, protein:58, carbs:35, fat:12, icon:"🍗",
+    ingredients:["200g Hähnchenbrustfilet (46g P)","100g rote Linsen gekocht (9g P)","200g Brokkoli (4g P)","1 TL Olivenöl","Kurkuma, Kreuzkümmel"],
+    tip:"Linsen liefern zusätzliches pflanzliches Protein + Ballaststoffe für Sättigung." },
+  { name:"Eiweiß-Omelette", meal:"Frühstück / Abendessen", time:"10 min", kcal:380, protein:42, carbs:8, fat:18, icon:"🥚",
+    ingredients:["3 ganze Eier (18g P)","4 Eiweiß (14g P)","100g Hüttenkäse (11g P)","Spinat, Tomaten","1 TL Butter"],
+    tip:"Abends ideal: kaum KH, viel Protein. Hüttenkäse = Casein für nächtliche Regeneration." },
+  { name:"Skyr-Pfannkuchen", meal:"Pre-Workout / Frühstück", time:"15 min", kcal:440, protein:38, carbs:48, fat:8, icon:"🥞",
+    ingredients:["200g Skyr (20g P)","2 Eier (12g P)","1 Messlöffel Whey (20g P)","60g Haferflocken (KH)","Zimt, Vanille"],
+    tip:"KH + Protein für Pre-Workout. Haferflocken = langsamer Glukoseanstieg, gute Energie beim Training." },
+  { name:"Thunfisch-Avocado-Bowl", meal:"Mittagessen", time:"5 min", kcal:460, protein:44, carbs:18, fat:22, icon:"🥑",
+    ingredients:["2 Dosen Thunfisch in Wasser (40g P)","½ Avocado (gesunde Fette)","100g Kichererbsen (4g P)","Zitronensaft, Paprika","Salatblätter"],
+    tip:"Schnell zubereitet, kein Kochen nötig. Avocado liefert Fett ohne KH-Spike." },
+  { name:"Abend-Casein-Quark", meal:"Abendessen / Snack", time:"2 min", kcal:280, protein:38, carbs:14, fat:5, icon:"🌙",
+    ingredients:["250g Magerquark (30g P)","1 Messlöffel Casein-Protein (25g P)","1 EL Nussbutter (Fett)","Prise Zimt"],
+    tip:"Kasein wird langsam verdaut — ideal direkt vor dem Schlafen für nächtliche Muskelproteinsynthese." },
+  { name:"Rindfleisch-Gemüse-Pfanne", meal:"Abendessen", time:"20 min", kcal:490, protein:50, carbs:15, fat:22, icon:"🥩",
+    ingredients:["200g mageres Rinderhack (42g P)","200g Zucchini, Paprika, Zwiebel","2 EL Olivenöl","100g Joghurt als Sauce (5g P)","Oregano, Knoblauch"],
+    tip:"Rotes Fleisch liefert Kreatin, Eisen und Zink — alles wichtig für Krafttraining und Hormonbalance." },
+];
+
+const PROTEIN_SOURCES = [
+  { food:"Magerquark (500g)", protein:60, kcal:340, note:"Casein, ideal abends" },
+  { food:"Skyr (500g)", protein:55, kcal:330, note:"Sehr sättigend" },
+  { food:"Hähnchenbrustfilet (200g)", protein:46, kcal:220, note:"Magerstes Fleisch" },
+  { food:"Lachs (200g)", protein:40, kcal:360, note:"+ Omega-3" },
+  { food:"Eier × 3 + 4 Eiweiß", protein:36, kcal:280, note:"Vollständiges Aminoprofil" },
+  { food:"Thunfisch (2 Dosen)", protein:40, kcal:180, note:"Schnell, günstig" },
+  { food:"Whey Protein (30g)", protein:24, kcal:120, note:"Post-Workout" },
+  { food:"Hüttenkäse (250g)", protein:28, kcal:200, note:"Casein-reich" },
+  { food:"Linsen gekocht (200g)", protein:18, kcal:230, note:"+ Ballaststoffe" },
+  { food:"Rindfleisch mager (150g)", protein:32, kcal:240, note:"Kreatin, Zink" },
+];
+
+const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+
+// ─── FOOD SEARCH ─────────────────────────────────────────────────────────────
+
+async function searchFood(query) {
+  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,nutriments,brands`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return (data.products || []).filter(p =>
+    p.product_name && p.nutriments?.["energy-kcal_100g"] && p.nutriments?.["proteins_100g"] != null
+  ).map(p => ({
+    name: p.product_name,
+    brand: p.brands || "",
+    kcal100: Math.round(p.nutriments["energy-kcal_100g"] || 0),
+    protein100: Math.round((p.nutriments["proteins_100g"] || 0) * 10) / 10,
+    carbs100: Math.round((p.nutriments["carbohydrates_100g"] || 0) * 10) / 10,
+    fat100: Math.round((p.nutriments["fat_100g"] || 0) * 10) / 10,
+  }));
+}
+
+// ─── STYLES ──────────────────────────────────────────────────────────────────
+
+const S = {
+  app: { minHeight:"100vh", background:"#111", color:"#f0ece4", fontFamily:"'DM Sans',sans-serif" },
+  header: { padding:"22px 18px 12px", borderBottom:"1px solid #1e1e1e", background:"#111", position:"sticky", top:0, zIndex:100 },
+  title: { fontFamily:"'Playfair Display',serif", fontSize:"20px", fontWeight:700, color:"#f0ece4", letterSpacing:"-0.02em" },
+  sub: { fontSize:"10px", color:"#444", letterSpacing:"0.12em", textTransform:"uppercase", marginTop:"3px", fontFamily:"'DM Mono',monospace" },
+  tabs: { display:"flex", gap:"2px", padding:"10px 18px 0", background:"#111", overflowX:"auto", WebkitOverflowScrolling:"touch" },
+  tab: a => ({ padding:"7px 13px", fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", fontFamily:"'DM Mono',monospace", background:a?"#c8a96e":"transparent", color:a?"#111":"#555", border:"none", borderRadius:"4px 4px 0 0", cursor:"pointer", fontWeight:a?700:400, whiteSpace:"nowrap", flexShrink:0 }),
+  content: { padding:"14px 14px 80px", maxWidth:"480px", margin:"0 auto" },
+  card: { background:"#181818", borderRadius:"12px", padding:"15px", marginBottom:"11px", border:"1px solid #222" },
+  cardTitle: { fontSize:"10px", letterSpacing:"0.14em", textTransform:"uppercase", color:"#c8a96e", fontFamily:"'DM Mono',monospace", marginBottom:"11px", fontWeight:600 },
+  toggle: a => ({ flex:1, padding:"9px", border:"none", borderRadius:"8px", fontSize:"11px", fontWeight:600, fontFamily:"'DM Mono',monospace", cursor:"pointer", background:a?"#c8a96e":"#222", color:a?"#111":"#666" }),
+  timeBtn: a => ({ flex:1, padding:"8px", border:"1px solid", borderColor:a?"#c8a96e":"#2a2a2a", borderRadius:"6px", fontSize:"12px", fontFamily:"'DM Mono',monospace", cursor:"pointer", background:a?"#1e1a12":"#141414", color:a?"#c8a96e":"#444" }),
+  input: { width:"100%", background:"#1a1a1a", border:"1px solid #2a2a2a", borderRadius:"8px", padding:"10px 12px", color:"#f0ece4", fontSize:"14px", fontFamily:"'DM Mono',monospace", outline:"none", boxSizing:"border-box" },
+  label: { fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", color:"#555", fontFamily:"'DM Mono',monospace", marginBottom:"5px", display:"block" },
+  mealCard: { background:"#141414", borderRadius:"10px", padding:"12px", marginBottom:"8px", border:"1px solid #1e1e1e", borderLeft:"3px solid #c8a96e" },
+  chip: c => ({ fontSize:"10px", padding:"3px 8px", borderRadius:"20px", background:c+"18", color:c, fontFamily:"'DM Mono',monospace", fontWeight:600 }),
+  statBox: { background:"#141414", borderRadius:"8px", padding:"10px 8px", textAlign:"center", border:"1px solid #1e1e1e" },
+  btn: (c="#c8a96e",tc="#111") => ({ background:c, color:tc, border:"none", borderRadius:"8px", padding:"10px 16px", fontSize:"11px", fontWeight:700, fontFamily:"'DM Mono',monospace", cursor:"pointer", letterSpacing:"0.06em" }),
+  tag: c => ({ fontSize:"9px", padding:"2px 7px", borderRadius:"12px", background:c+"22", color:c, fontFamily:"'DM Mono',monospace", fontWeight:600 }),
+};
+
+// ─── MACRO BAR ───────────────────────────────────────────────────────────────
+
+function MacroBar({ label, value, max, color }) {
+  const pct = Math.min((value/max)*100,100);
+  return (
+    <div style={{marginBottom:"9px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:"3px"}}>
+        <span style={{fontSize:"10px",letterSpacing:"0.08em",textTransform:"uppercase",color:"#666",fontFamily:"'DM Mono',monospace"}}>{label}</span>
+        <span style={{fontSize:"12px",fontWeight:600,color:"#f0ece4",fontFamily:"'DM Mono',monospace"}}>{value}g <span style={{color:"#444",fontSize:"10px"}}>/ {max}g</span></span>
+      </div>
+      <div style={{height:"4px",background:"#222",borderRadius:"2px",overflow:"hidden"}}>
+        <div style={{height:"100%",width:`${pct}%`,background:color,borderRadius:"2px",transition:"width 0.5s ease"}}/>
+      </div>
+    </div>
+  );
+}
+
+// ─── KCAL RING ───────────────────────────────────────────────────────────────
+
+function KcalRing({ consumed, target }) {
+  const pct = Math.min(consumed/target,1);
+  const r=42, circ=2*Math.PI*r, over=consumed>target;
+  return (
+    <svg width="100" height="100" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r={r} fill="none" stroke="#1e1e1e" strokeWidth="7"/>
+      <circle cx="50" cy="50" r={r} fill="none" stroke={over?"#e05c5c":"#c8a96e"} strokeWidth="7"
+        strokeDasharray={`${pct*circ} ${circ}`} strokeLinecap="round" transform="rotate(-90 50 50)"
+        style={{transition:"stroke-dasharray 0.6s ease"}}/>
+      <text x="50" y="46" textAnchor="middle" fill="#f0ece4" fontSize="14" fontWeight="700" fontFamily="'Playfair Display',serif">{consumed}</text>
+      <text x="50" y="59" textAnchor="middle" fill="#555" fontSize="8" fontFamily="'DM Mono',monospace">/ {target} kcal</text>
+    </svg>
+  );
+}
+
+// ─── FOOD TRACKER ────────────────────────────────────────────────────────────
+
+function FoodTracker({ macros, targetKcal, todayFoods, setTodayFoods }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [amount, setAmount] = useState("100");
+  const [error, setError] = useState("");
+  const debounce = useRef(null);
+
+  const search = useCallback(async (q) => {
+    if (q.length < 2) { setResults([]); return; }
+    setLoading(true); setError("");
+    try {
+      const r = await searchFood(q);
+      setResults(r);
+      if (r.length === 0) setError("Nichts gefunden — anderen Begriff versuchen.");
+    } catch { setError("Verbindungsfehler. Bitte nochmal versuchen."); }
+    setLoading(false);
+  }, []);
+
+  const handleQuery = v => {
+    setQuery(v);
+    clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => search(v), 650);
+  };
+
+  const addFood = () => {
+    if (!selected || !amount) return;
+    const g = parseFloat(amount), f = g / 100;
+    setTodayFoods(prev => [...prev, {
+      id: Date.now(), name: selected.name, brand: selected.brand, amount: g,
+      kcal: Math.round(selected.kcal100 * f),
+      protein: Math.round(selected.protein100 * f * 10) / 10,
+      carbs: Math.round(selected.carbs100 * f * 10) / 10,
+      fat: Math.round(selected.fat100 * f * 10) / 10,
+    }]);
+    setSelected(null); setQuery(""); setResults([]); setAmount("100");
+  };
+
+  const totals = todayFoods.reduce((a,f) => ({
+    kcal:a.kcal+f.kcal, protein:a.protein+f.protein, carbs:a.carbs+f.carbs, fat:a.fat+f.fat
+  }), {kcal:0,protein:0,carbs:0,fat:0});
+
+  return (
+    <div>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Heutige Bilanz</div>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:"14px"}}>
+          <KcalRing consumed={totals.kcal} target={targetKcal}/>
+        </div>
+        <MacroBar label="Protein" value={Math.round(totals.protein)} max={macros.protein} color="#7ec8a0"/>
+        <MacroBar label="KH" value={Math.round(totals.carbs)} max={macros.carbs} color="#c8a96e"/>
+        <MacroBar label="Fett" value={Math.round(totals.fat)} max={macros.fat} color="#c87e7e"/>
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:"10px",fontSize:"11px",fontFamily:"'DM Mono',monospace"}}>
+          <span style={{color:"#555"}}>Noch offen:</span>
+          <span style={{color:totals.kcal>targetKcal?"#e05c5c":"#7ec8a0",fontWeight:700}}>
+            {targetKcal-totals.kcal} kcal · {Math.max(0,macros.protein-Math.round(totals.protein))}g Protein
+          </span>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Lebensmittel suchen</div>
+        <div style={{fontSize:"10px",color:"#444",fontFamily:"'DM Mono',monospace",marginBottom:"8px"}}>Datenbank: Open Food Facts · 3 Mio. Produkte</div>
+        <input style={S.input} placeholder="z.B. Magerquark, Hähnchenbrust, Lachs..."
+          value={query} onChange={e => handleQuery(e.target.value)}/>
+        {loading && <div style={{fontSize:"11px",color:"#555",marginTop:"8px",fontFamily:"'DM Mono',monospace"}}>Suche läuft...</div>}
+        {error && <div style={{fontSize:"11px",color:"#e05c5c",marginTop:"8px"}}>{error}</div>}
+
+        {results.length > 0 && !selected && (
+          <div style={{marginTop:"10px",border:"1px solid #222",borderRadius:"8px",overflow:"hidden",maxHeight:"300px",overflowY:"auto"}}>
+            {results.map((r,i) => (
+              <div key={i} style={{padding:"11px 12px",borderBottom:"1px solid #1e1e1e",cursor:"pointer",background:i%2===0?"#141414":"#181818"}}
+                onClick={() => { setSelected(r); setResults([]); }}>
+                <div style={{fontSize:"13px",color:"#f0ece4",fontWeight:600,marginBottom:"3px"}}>{r.name}</div>
+                {r.brand && <div style={{fontSize:"10px",color:"#555",marginBottom:"5px"}}>{r.brand}</div>}
+                <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                  <span style={S.tag("#c8a96e")}>{r.kcal100} kcal</span>
+                  <span style={S.tag("#7ec8a0")}>P {r.protein100}g</span>
+                  <span style={S.tag("#7ea8c8")}>KH {r.carbs100}g</span>
+                  <span style={S.tag("#c87e7e")}>F {r.fat100}g</span>
+                  <span style={{fontSize:"9px",color:"#333",fontFamily:"'DM Mono',monospace",alignSelf:"center"}}>/ 100g</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {selected && (
+          <div style={{marginTop:"12px",background:"#1a1a12",border:"1px solid #c8a96e44",borderRadius:"8px",padding:"12px"}}>
+            <div style={{fontSize:"13px",color:"#c8a96e",fontWeight:600,marginBottom:"8px"}}>{selected.name}</div>
+            <div style={{display:"flex",gap:"6px",marginBottom:"10px",flexWrap:"wrap"}}>
+              <span style={S.tag("#c8a96e")}>{selected.kcal100} kcal/100g</span>
+              <span style={S.tag("#7ec8a0")}>P {selected.protein100}g/100g</span>
+            </div>
+            <label style={S.label}>Menge (g)</label>
+            <div style={{display:"flex",gap:"8px",alignItems:"center",marginBottom:"10px"}}>
+              <input style={{...S.input,width:"100px"}} type="number" value={amount}
+                onChange={e => setAmount(e.target.value)} placeholder="100"/>
+              <div style={{fontSize:"11px",color:"#666",fontFamily:"'DM Mono',monospace",lineHeight:1.5}}>
+                = {Math.round(selected.kcal100 * parseFloat(amount||0) / 100)} kcal<br/>
+                {Math.round(selected.protein100 * parseFloat(amount||0) / 10) / 10}g Protein
+              </div>
+            </div>
+            <div style={{display:"flex",gap:"8px"}}>
+              <button style={S.btn()} onClick={addFood}>+ Hinzufügen</button>
+              <button style={S.btn("#222","#666")} onClick={() => setSelected(null)}>Abbrechen</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {todayFoods.length > 0 && (
+        <div style={S.card}>
+          <div style={S.cardTitle}>Gegessen heute</div>
+          {todayFoods.map((f,i) => (
+            <div key={f.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 0",borderBottom:i<todayFoods.length-1?"1px solid #1e1e1e":"none"}}>
+              <div style={{flex:1,marginRight:"10px"}}>
+                <div style={{fontSize:"12px",color:"#d0ccc4",fontWeight:600}}>{f.name}</div>
+                <div style={{fontSize:"10px",color:"#444",fontFamily:"'DM Mono',monospace",marginTop:"2px"}}>
+                  {f.amount}g · P {f.protein}g · KH {f.carbs}g · F {f.fat}g
+                </div>
+              </div>
+              <div style={{display:"flex",gap:"8px",alignItems:"center",flexShrink:0}}>
+                <span style={{fontSize:"13px",fontWeight:700,color:"#c8a96e",fontFamily:"'DM Mono',monospace"}}>{f.kcal}</span>
+                <button style={{background:"none",border:"none",color:"#444",cursor:"pointer",fontSize:"16px",padding:"2px 6px",lineHeight:1}}
+                  onClick={() => setTodayFoods(prev => prev.filter(x => x.id !== f.id))}>✕</button>
+              </div>
+            </div>
+          ))}
+          <div style={{marginTop:"10px",paddingTop:"10px",borderTop:"1px solid #222",display:"flex",justifyContent:"space-between",fontSize:"12px",fontFamily:"'DM Mono',monospace"}}>
+            <span style={{color:"#555"}}>Gesamt</span>
+            <span style={{color:"#c8a96e",fontWeight:700}}>{totals.kcal} kcal · P {Math.round(totals.protein)}g</span>
+          </div>
+        </div>
+      )}
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Proteinquellen — Schnellreferenz</div>
+        <div style={{fontSize:"10px",color:"#555",marginBottom:"10px",fontFamily:"'DM Mono',monospace"}}>Ziel: {macros.protein}g Protein täglich</div>
+        {PROTEIN_SOURCES.map((s,i) => (
+          <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<PROTEIN_SOURCES.length-1?"1px solid #1e1e1e":"none"}}>
+            <div>
+              <div style={{fontSize:"12px",color:"#d0ccc4"}}>{s.food}</div>
+              <div style={{fontSize:"10px",color:"#555",fontStyle:"italic",marginTop:"2px"}}>{s.note}</div>
+            </div>
+            <div style={{textAlign:"right",flexShrink:0,marginLeft:"10px"}}>
+              <div style={{fontSize:"14px",fontWeight:700,color:"#7ec8a0",fontFamily:"'DM Mono',monospace"}}>{s.protein}g P</div>
+              <div style={{fontSize:"10px",color:"#444",fontFamily:"'DM Mono',monospace"}}>{s.kcal} kcal</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── RECIPES ─────────────────────────────────────────────────────────────────
+
+function Recipes({ macros }) {
+  const [open, setOpen] = useState(null);
+  return (
+    <div>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Dein Proteinziel</div>
+        <div style={{fontSize:"12px",color:"#9a9690",lineHeight:1.6}}>
+          Du brauchst täglich <span style={{color:"#c8a96e",fontWeight:700}}>{macros.protein}g Protein</span>. Kombiniere 3–4 dieser Rezepte pro Tag.
+        </div>
+      </div>
+      {RECIPES.map((r,i) => (
+        <div key={i} style={{...S.card,padding:"14px"}}>
+          <div style={{cursor:"pointer"}} onClick={() => setOpen(open===i?null:i)}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",gap:"8px",alignItems:"center",marginBottom:"5px"}}>
+                  <span style={{fontSize:"20px"}}>{r.icon}</span>
+                  <span style={{fontSize:"14px",fontWeight:700,color:"#f0ece4"}}>{r.name}</span>
+                </div>
+                <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"6px"}}>
+                  <span style={S.tag("#7ea8c8")}>{r.meal}</span>
+                  <span style={S.tag("#555")}>⏱ {r.time}</span>
+                </div>
+                <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                  <span style={S.tag("#c8a96e")}>{r.kcal} kcal</span>
+                  <span style={S.tag("#7ec8a0")}>P {r.protein}g</span>
+                  <span style={S.tag("#7ea8c8")}>KH {r.carbs}g</span>
+                  <span style={S.tag("#c87e7e")}>F {r.fat}g</span>
+                </div>
+              </div>
+              <span style={{color:"#444",fontSize:"14px",marginLeft:"10px",marginTop:"4px"}}>{open===i?"▲":"▼"}</span>
+            </div>
+          </div>
+          {open===i && (
+            <div style={{marginTop:"12px",borderTop:"1px solid #222",paddingTop:"12px"}}>
+              <div style={S.label}>Zutaten</div>
+              {r.ingredients.map((ing,j) => (
+                <div key={j} style={{display:"flex",gap:"8px",padding:"5px 0",borderBottom:"1px solid #1a1a1a",fontSize:"12px",color:"#b0acaa"}}>
+                  <span style={{color:"#c8a96e",minWidth:"12px"}}>·</span>{ing}
+                </div>
+              ))}
+              <div style={{marginTop:"12px",background:"#1a1a12",borderRadius:"8px",padding:"10px",borderLeft:"3px solid #c8a96e"}}>
+                <div style={{fontSize:"10px",letterSpacing:"0.1em",textTransform:"uppercase",color:"#c8a96e",fontFamily:"'DM Mono',monospace",marginBottom:"4px"}}>Warum dieses Rezept</div>
+                <div style={{fontSize:"11px",color:"#9a9690",lineHeight:1.6}}>{r.tip}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── MAIN APP ────────────────────────────────────────────────────────────────
+
+function App() {
+  const bmr = Math.round(calcBMR(PROFILE.leanMass));
+  const [tab, setTab] = useState("heute");
+  const [isTrain, setIsTrain] = useState(true);
+  const [trainTime, setTrainTime] = useState("08:00");
+  const [dayTypes, setDayTypes] = useState([true,false,true,false,true,false,false]);
+  const [currentDay, setCurrentDay] = useState(0);
+  const [weekLog, setWeekLog] = useState(Array(7).fill(null).map(()=>({kcal:"",protein:"",carbs:"",fat:"",weight:""})));
+  const [weeks, setWeeks] = useState(1);
+  const [todayFoods, setTodayFoods] = useState([]);
+
+  const tdee = calcTDEE(bmr, isTrain);
+  const targetKcal = tdee - DEFICIT;
+  const macros = calcMacros(PROFILE.weight, targetKcal);
+  const meals = getMeals(trainTime, isTrain);
+
+  const totals = todayFoods.reduce((a,f)=>({kcal:a.kcal+f.kcal,protein:a.protein+f.protein,carbs:a.carbs+f.carbs,fat:a.fat+f.fat}),{kcal:0,protein:0,carbs:0,fat:0});
+
+  const renderHeute = () => (
+    <div>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Tagestyp</div>
+        <div style={{display:"flex",gap:"8px",marginBottom:isTrain?"12px":"0"}}>
+          <button style={S.toggle(isTrain)} onClick={()=>setIsTrain(true)}>Training</button>
+          <button style={S.toggle(!isTrain)} onClick={()=>setIsTrain(false)}>Ruhetag</button>
+        </div>
+        {isTrain && (
+          <div style={{marginTop:"10px"}}>
+            <div style={S.label}>Trainingszeit</div>
+            <div style={{display:"flex",gap:"8px"}}>
+              {["08:00","14:30"].map(t=>(
+                <button key={t} style={S.timeBtn(trainTime===t)} onClick={()=>setTrainTime(t)}>{t} Uhr</button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"7px",marginBottom:"11px"}}>
+        {[
+          {label:"Ziel kcal", val:targetKcal, color:"#c8a96e"},
+          {label:"Protein", val:`${macros.protein}g`, color:"#7ec8a0"},
+          {label:"Getrackt", val:totals.kcal, color:totals.kcal>targetKcal?"#e05c5c":"#f0ece4"},
+        ].map(({label,val,color})=>(
+          <div key={label} style={S.statBox}>
+            <div style={{fontSize:"17px",fontWeight:700,fontFamily:"'Playfair Display',serif",color}}>{val}</div>
+            <div style={{fontSize:"9px",color:"#555",letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"'DM Mono',monospace",marginTop:"2px"}}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {todayFoods.length > 0 && (
+        <div style={S.card}>
+          <div style={S.cardTitle}>Fortschritt heute</div>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:"12px"}}>
+            <KcalRing consumed={totals.kcal} target={targetKcal}/>
+          </div>
+          <MacroBar label="Protein" value={Math.round(totals.protein)} max={macros.protein} color="#7ec8a0"/>
+          <MacroBar label="KH" value={Math.round(totals.carbs)} max={macros.carbs} color="#c8a96e"/>
+          <MacroBar label="Fett" value={Math.round(totals.fat)} max={macros.fat} color="#c87e7e"/>
+        </div>
+      )}
+
+      <div style={S.card}>
+        <div style={S.cardTitle}>Mahlzeitenplan — {isTrain?`Training ${trainTime}`:"Ruhetag"}</div>
+        {meals.map((m,i)=>(
+          <div key={i} style={S.mealCard}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"7px"}}>
+              <div>
+                <div style={{fontSize:"11px",color:"#c8a96e",fontFamily:"'DM Mono',monospace"}}>{m.time} — {m.icon} {m.label}</div>
+                <div style={{fontSize:"10px",color:"#444",marginTop:"2px",fontStyle:"italic"}}>{m.note}</div>
+              </div>
+              <div style={{fontSize:"13px",fontWeight:700,color:"#f0ece4",fontFamily:"'DM Mono',monospace",flexShrink:0,marginLeft:"8px"}}>{Math.round(targetKcal*m.kP)} kcal</div>
+            </div>
+            <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+              <span style={S.chip("#7ec8a0")}>P {Math.round(macros.protein*m.pP)}g</span>
+              <span style={S.chip("#c8a96e")}>KH {Math.round(macros.carbs*m.cP)}g</span>
+              <span style={S.chip("#c87e7e")}>F {Math.round(macros.fat*m.fP)}g</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderWoche = () => (
+    <div>
+      <div style={S.card}>
+        <div style={S.cardTitle}>Wochenkonfiguration</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"5px",marginBottom:"12px"}}>
+          {DAYS.map((d,i)=>(
+            <div key={i} style={{padding:"8px 2px",borderRadius:"6px",textAlign:"center",border:"1px solid",borderColor:currentDay===i?"#c8a96e":"#222",background:currentDay===i?"#1e1a12":"#141414",cursor:"pointer"}}
+              onClick={()=>setCurrentDay(i)}>
+              <div style={{fontSize:"9px",color:"#555",fontFamily:"'DM Mono',monospace"}}>{d}</div>
+              <div style={{fontSize:"9px",marginTop:"3px",color:dayTypes[i]?"#c8a96e":"#333"}}>{dayTypes[i]?"T":"R"}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:"8px"}}>
+          <button style={S.toggle(dayTypes[currentDay])} onClick={()=>setDayTypes(prev=>prev.map((v,i)=>i===currentDay?true:v))}>Training</button>
+          <button style={S.toggle(!dayTypes[currentDay])} onClick={()=>setDayTypes(prev=>prev.map((v,i)=>i===currentDay?false:v))}>Ruhetag</button>
+        </div>
+      </div>
+
+      <div style={S.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+          <span style={{fontSize:"10px",letterSpacing:"0.14em",textTransform:"uppercase",color:"#c8a96e",fontFamily:"'DM Mono',monospace",fontWeight:600}}>Wochenprotokoll</span>
+          <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+            <span style={{fontSize:"10px",color:"#555",fontFamily:"'DM Mono',monospace"}}>Woche</span>
+            <input style={{...S.input,width:"52px",padding:"4px 8px",fontSize:"12px"}} type="number" value={weeks} min="1"
+              onChange={e=>setWeeks(parseInt(e.target.value)||1)}/>
+          </div>
+        </div>
+        {DAYS.map((d,i)=>(
+          <div key={i} style={{borderBottom:"1px solid #1e1e1e",paddingBottom:"10px",marginBottom:"10px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:"7px"}}>
+              <span style={{fontSize:"12px",fontWeight:600,color:dayTypes[i]?"#c8a96e":"#555"}}>{d} — {dayTypes[i]?"Training":"Ruhe"}</span>
+              <div style={{display:"flex",gap:"5px",alignItems:"center"}}>
+                <span style={{fontSize:"9px",color:"#444",fontFamily:"'DM Mono',monospace"}}>kg</span>
+                <input style={{...S.input,width:"58px",padding:"4px 7px",fontSize:"11px"}} type="number"
+                  value={weekLog[i].weight} placeholder="–"
+                  onChange={e=>setWeekLog(prev=>prev.map((r,j)=>j===i?{...r,weight:e.target.value}:r))}/>
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"5px"}}>
+              {["kcal","protein","carbs","fat"].map(k=>(
+                <div key={k}>
+                  <div style={S.label}>{k==="kcal"?"kcal":k==="protein"?"P(g)":k==="carbs"?"KH(g)":"F(g)"}</div>
+                  <input style={{...S.input,padding:"6px 7px",fontSize:"11px"}} type="number"
+                    value={weekLog[i][k]} placeholder="0"
+                    onChange={e=>setWeekLog(prev=>prev.map((r,j)=>j===i?{...r,[k]:e.target.value}:r))}/>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        {weeks>=4 && (()=>{
+          const weights=weekLog.map(r=>parseFloat(r.weight)).filter(Boolean);
+          if(weights.length>=2){
+            const delta=weights[0]-weights[weights.length-1];
+            const expected=(DEFICIT*7*weeks)/7700;
+            if(delta<expected*0.5) return (
+              <div style={{background:"#2a1a1a",border:"1px solid #e05c5c",borderRadius:"8px",padding:"12px",marginTop:"8px"}}>
+                <div style={{fontSize:"10px",letterSpacing:"0.1em",textTransform:"uppercase",color:"#e05c5c",fontFamily:"'DM Mono',monospace",marginBottom:"5px"}}>⚠ Metabolische Adaptation</div>
+                <div style={{fontSize:"11px",color:"#c88",lineHeight:1.5}}>
+                  Gewichtsverlust nach {weeks} Wochen unter Erwartung ({expected.toFixed(1)}kg erwartet, {delta.toFixed(1)}kg tatsächlich). 
+                  Empfehlung: 1 Woche auf {targetKcal+DEFICIT} kcal (Erhaltung), dann weiter.
+                </div>
+              </div>
+            );
+          }
+        })()}
+      </div>
+    </div>
+  );
+
+  const renderProfil = () => {
+    const fatMass=PROFILE.weight-PROFILE.leanMass;
+    const kgToLose=Math.round((fatMass-PROFILE.weight*0.30)*10)/10;
+    const weeksTo=Math.round((kgToLose*7700)/(DEFICIT*7));
+    return (
+      <div>
+        <div style={S.card}>
+          <div style={S.cardTitle}>Körperprofil</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+            {[{l:"Gewicht",v:`${PROFILE.weight} kg`},{l:"Körperfett",v:`${PROFILE.bodyFat}%`},{l:"Fettfreie Masse",v:`${PROFILE.leanMass} kg`},{l:"Fettmasse",v:`${fatMass.toFixed(1)} kg`}]
+              .map(({l,v})=>(
+                <div key={l} style={S.statBox}>
+                  <div style={{fontSize:"15px",fontWeight:600,fontFamily:"'DM Mono',monospace",color:"#f0ece4"}}>{v}</div>
+                  <div style={{fontSize:"9px",color:"#555",letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"'DM Mono',monospace",marginTop:"2px"}}>{l}</div>
+                </div>
+              ))}
+          </div>
+        </div>
+        <div style={S.card}>
+          <div style={S.cardTitle}>Energiebilanz</div>
+          {[
+            {l:"BMR (Katch-McArdle)",v:`${bmr} kcal`},
+            {l:"TDEE Trainingstag",v:`${calcTDEE(bmr,true)} kcal`},
+            {l:"TDEE Ruhetag",v:`${calcTDEE(bmr,false)} kcal`},
+            {l:"Tägliches Defizit",v:`${DEFICIT} kcal`},
+            {l:"Protein (1,9g/kg)",v:`${macros.protein}g`},
+          ].map(({l,v})=>(
+            <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"9px 0",borderBottom:"1px solid #1e1e1e"}}>
+              <span style={{fontSize:"12px",color:"#9a9690"}}>{l}</span>
+              <span style={{fontSize:"13px",fontWeight:700,fontFamily:"'DM Mono',monospace",color:"#c8a96e"}}>{v}</span>
+            </div>
+          ))}
+        </div>
+        <div style={S.card}>
+          <div style={S.cardTitle}>Zielprojektion → 30% KFA</div>
+          <div style={{textAlign:"center",padding:"10px 0"}}>
+            <div style={{fontSize:"28px",fontWeight:700,fontFamily:"'Playfair Display',serif",color:"#c8a96e"}}>{kgToLose} kg</div>
+            <div style={{fontSize:"11px",color:"#555",marginTop:"4px"}}>Fett abzubauen</div>
+            <div style={{marginTop:"12px",fontSize:"13px",color:"#d0ccc4"}}>
+              Bei 300 kcal Defizit: ca. <span style={{color:"#c8a96e",fontWeight:700}}>{Math.round(weeksTo/4)} Monate</span>
+            </div>
+          </div>
+        </div>
+        <div style={{...S.card,borderColor:"#2a2a1a"}}>
+          <div style={S.cardTitle}>Postmenopausale Hinweise</div>
+          {["Anabole Resistenz: 1,9g Protein/kg ist Minimum. Leucin-Schwelle pro Mahlzeit: 2,5–3g.",
+            "Insulinsensitivität: KH morgens und post-workout. Abends Protein + Fett, kaum KH.",
+            "Nächtliche Synthese: Casein vor dem Schlafen (Quark, Hüttenkäse) unterstützt Regeneration.",
+            "Metabolische Adaptation: Nach 4 Wochen Plateau → 1 Woche Erhaltung, dann weiter.",
+            "Omega-3 täglich: Lachs, Makrele oder Supplement reduziert trainingsbedingte Entzündung.",
+          ].map((tip,i)=>(
+            <div key={i} style={{display:"flex",gap:"10px",padding:"9px 0",borderBottom:i<4?"1px solid #1e1e1e":"none"}}>
+              <span style={{color:"#c8a96e",fontSize:"11px",minWidth:"14px",fontFamily:"'DM Mono',monospace"}}>{i+1}.</span>
+              <span style={{fontSize:"11px",color:"#7a7670",lineHeight:1.6}}>{tip}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={S.app}>
+      <div style={S.header}>
+        <div style={S.title}>Ernährungs-Tool</div>
+        <div style={S.sub}>Stephanie Meurer · Krafttraining + Fettabbau</div>
+      </div>
+      <div style={S.tabs}>
+        {[["heute","Heute"],["tracker","Tracker"],["rezepte","Rezepte"],["woche","Woche"],["profil","Profil"]].map(([k,l])=>(
+          <button key={k} style={S.tab(tab===k)} onClick={()=>setTab(k)}>{l}</button>
+        ))}
+      </div>
+      <div style={S.content}>
+        {tab==="heute" && renderHeute()}
+        {tab==="tracker" && <FoodTracker macros={macros} targetKcal={targetKcal} todayFoods={todayFoods} setTodayFoods={setTodayFoods}/>}
+        {tab==="rezepte" && <Recipes macros={macros}/>}
+        {tab==="woche" && renderWoche()}
+        {tab==="profil" && renderProfil()}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
