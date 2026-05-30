@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash \"C:\\\\Users\\\\Stephanie\\\\.claude\\\\plugins\\\\cache\\\\superpowers-marketplace\\\\superpowers\\\\5.1.0\\\\skills\\\\brainstorming\\\\scripts\\\\start-server.sh\" --project-dir \"D:\\\\Claude Projekte\\\\Ernährungs-Dashboard\")",
+      "Bash(Get-ChildItem -Path \"D:\\\\Claude Projekte\\\\Ernährungs-Dashboard\\\\js\\\\tabs\" -Recurse -File -Filter \"*.js\")",
+      "Bash(Select-Object FullName)"
+    ]
+  }
+}
