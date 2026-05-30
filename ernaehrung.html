@@ -20,6 +20,11 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: #111; }
     ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+    /* Cursor auf dunklem Hintergrund sichtbar machen */
+    * { cursor: inherit; }
+    body { cursor: default; }
+    button, [role="button"], label[style*="cursor"] { cursor: pointer !important; }
+    input, select, textarea { cursor: text; caret-color: #c8a96e; }
   </style>
 </head>
 <body>
