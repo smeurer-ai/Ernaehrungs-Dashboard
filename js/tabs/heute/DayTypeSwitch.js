@@ -23,7 +23,7 @@ export function DayTypeSwitch({ dayType, trainingTime, onDayTypeChange, onTraini
   const t = (trainingTime || '08:00').split(':').map(Number);
   const T = t[0] * 60 + (t[1] || 0);
   const preLabel  = fmtTime(T - 75);
-  const postLabel = fmtTime(T + 30);
+  const postLabel = fmtTime(T + 90);
 
   return html`
     <div style=${S.card}>

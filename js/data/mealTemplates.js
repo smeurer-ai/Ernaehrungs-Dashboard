@@ -5,7 +5,7 @@
  *
  * Trainingstag: Zeiten werden relativ zur gewählten Trainingszeit berechnet.
  *   - Pre-Workout:  T − 1h15min
- *   - Post-Workout: T + 30min
+ *   - Post-Workout: T + 1h30 (Training ~1h + Heimfahrt + Zubereitung)
  *   - Restliche Mahlzeiten werden automatisch um Pre/Post verteilt.
  *
  * Ruhetag: feste Mahlzeiten.
@@ -56,7 +56,7 @@ export const REST_MEALS = [
 export function generateTrainingDayMeals(trainingTimeStr) {
   const T    = clamp(toMin(trainingTimeStr), 5 * 60, 22 * 60);
   const pre  = clamp(T - 75, 5 * 60, 22 * 60);  // 1h15 vor Training
-  const post = clamp(T + 30, 6 * 60, 23 * 60);  // 30min nach Training
+  const post = clamp(T + 90, 6 * 60, 23 * 60);  // 1h30 nach Trainingsstart (Trainingsende + Fahrt/Prep)
 
   const BREAKFAST = 8 * 60;           // 08:00 feste Frühstückszeit
   const EARLY_CUTOFF     = 10.5 * 60; // 10:30 — Grenze Frühtraining
