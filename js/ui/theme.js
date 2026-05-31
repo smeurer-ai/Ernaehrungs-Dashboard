@@ -6,8 +6,8 @@ export const COLORS = {
   borderLight: '#1e1e1e',
   gold: '#c8a96e',
   text: '#f0ece4',
-  textMuted: '#555',
-  textSubtle: '#444',
+  textMuted: '#aaa',   // war #555 — erhöht für 50+ Lesbarkeit (Kontrast ~8.5:1 auf #111)
+  textSubtle: '#999',  // war #444 — erhöht für 50+ Lesbarkeit (Kontrast ~6.0:1 auf #111)
   error: '#e05c5c',
   success: '#5cb85c',
 };
