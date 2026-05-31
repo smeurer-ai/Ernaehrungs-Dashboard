@@ -4,6 +4,7 @@ import { useProfile } from './hooks/useProfile.js';
 import { useSettings } from './hooks/useSettings.js';
 import { useUiState } from './hooks/useUiState.js';
 import { ToastProvider } from './ui/Toast.js';
+import { ErrorBoundary } from './ui/ErrorBoundary.js';
 import { Navigation } from './ui/Navigation.js';
 import { BackupReminderBanner } from './ui/BackupReminderBanner.js';
 import { HeuteTab } from './tabs/heute/HeuteTab.js';
@@ -109,7 +110,7 @@ function App() {
   `;
 }
 
-// App mounten mit ToastProvider
+// App mounten: ErrorBoundary → ToastProvider → App
 createRoot(document.getElementById('root')).render(
-  html`<${ToastProvider}><${App} /></${ToastProvider}>`
+  html`<${ErrorBoundary}><${ToastProvider}><${App} /></${ToastProvider}></${ErrorBoundary}>`
 );

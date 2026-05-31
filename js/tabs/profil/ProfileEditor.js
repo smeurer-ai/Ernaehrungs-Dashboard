@@ -27,7 +27,11 @@ function Field({ label, field, type, min, max, step, suffix, form, update, borde
 }
 
 export function ProfileEditor({ profile, calculated, onSave }) {
-  const [form, setForm] = useState({ ...profile });
+  // fatPercent intern als Dezimal (0.25), im Formular als Prozent (25)
+  const [form, setForm] = useState({
+    ...profile,
+    fatPercent: Math.round((profile.fatPercent || 0.25) * 100),
+  });
   const [dirty, setDirty] = useState(false);
 
   const preview = useMemo(() => {
@@ -43,7 +47,7 @@ export function ProfileEditor({ profile, calculated, onSave }) {
         deficit: Number(form.deficit) || 0,
         trainingFactor: Number(form.trainingFactor) || 1.55,
         proteinPerKg: Number(form.proteinPerKg) || 1.9,
-        fatPercent: Number(form.fatPercent) || 0.25,
+        fatPercent: (Number(form.fatPercent) || 25) / 100,  // Prozent → Dezimal
       };
       const tdeeTraining = calcTDEE(bmr, patchedProfile.trainingFactor);
       const targetKcal = tdeeTraining - patchedProfile.deficit;
@@ -71,7 +75,7 @@ export function ProfileEditor({ profile, calculated, onSave }) {
       proteinPerKg: Number(form.proteinPerKg) || 1.9,
       trainingFactor: Number(form.trainingFactor) || 1.55,
       restFactor: Number(form.restFactor) || 1.35,
-      fatPercent: Number(form.fatPercent) || 0.25,
+      fatPercent: (Number(form.fatPercent) || 25) / 100,  // Prozent → Dezimal speichern
       strengthTrainingDaysPerWeek: Number(form.strengthTrainingDaysPerWeek) || 3,
       leanMass: calcLeanMass(Number(form.weight), Number(form.bodyFat)),
     };
@@ -143,8 +147,7 @@ export function ProfileEditor({ profile, calculated, onSave }) {
         `}
       </div>
 
-      <!-- fatPercent: gespeichert als Dezimal (0.25), aber angezeigt als Faktor -->
-      <${Field} label="Fettanteil-Faktor" field="fatPercent" suffix="z.B. 0.25 = 25%" min="0.10" max="0.55" step="0.01" form=${form} update=${update} />
+      <${Field} label="Fettanteil" field="fatPercent" suffix="%" min="10" max="55" step="1" form=${form} update=${update} />
       <${Field} label="PAL Trainingstag" field="trainingFactor" min="1.2" max="2.0" step="0.05" form=${form} update=${update} />
       <${Field} label="PAL Ruhetag" field="restFactor" min="1.2" max="2.0" step="0.05" form=${form} update=${update} />
       <${Field} label="Krafttraining-Tage/Woche" field="strengthTrainingDaysPerWeek" min="0" max="7" form=${form} update=${update} />
