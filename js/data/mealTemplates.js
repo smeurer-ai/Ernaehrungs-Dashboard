@@ -2,11 +2,18 @@
  * mealTemplates.js
  *
  * Mahlzeitenstruktur für Trainings- und Ruhetage.
+ * Optimiert für postmenopausale Frauen (Studienbasis: NotebookLM Ernaehrungs-Dashboard).
  *
  * Trainingstag: Zeiten werden relativ zur gewählten Trainingszeit berechnet.
  *   - Pre-Workout:  T − 1h15min
  *   - Post-Workout: T + 1h30 (Training ~1h + Heimfahrt + Zubereitung)
  *   - Restliche Mahlzeiten werden automatisch um Pre/Post verteilt.
+ *
+ * Postmenopausale Besonderheiten eingebaut:
+ *   - Frühstück ist die kalorienreichste Mahlzeit (Insulinsensitivität ↑)
+ *   - Pre-Workout KH reduziert (Frauen verbrennen mehr Fett beim Training)
+ *   - Leucin-Hinweise (~3g/Mahlzeit) gegen anabole Resistenz
+ *   - Casein-Timing präzisiert: 30–40g ~30min vor dem Schlafen
  *
  * Ruhetag: feste Mahlzeiten.
  */
@@ -30,12 +37,15 @@ function toStr(minutes) {
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 // ─── Ruhetag (fest) ───────────────────────────────────────────────────────────
+// Frühstück ist die größte Mahlzeit (postmenopausal: Kalorienfrontloading verbessert
+// Insulinsensitivität und Gewichtsregulation).
+// k=.32+.28+.15+.25=1.00  p=.32+.28+.15+.25=1.00  c=.25+.25+.20+.30=1.00  f=.28+.30+.12+.30=1.00 ✓
 
 export const REST_MEALS = [
-  { label: 'Frühstück',        time: '08:00', icon: '🌅', kP: .28, pP: .28, cP: .20, fP: .28, note: 'Protein-betont. KH moderat.' },
-  { label: 'Mittagessen',      time: '12:30', icon: '🌿', kP: .32, pP: .32, cP: .30, fP: .32, note: 'Größte Mahlzeit. Ausgewogen.' },
-  { label: 'Nachmittagssnack', time: '16:00', icon: '🫐', kP: .15, pP: .15, cP: .20, fP: .10, note: 'Klein. Protein + Fett.' },
-  { label: 'Abendessen',       time: '19:00', icon: '🌙', kP: .25, pP: .25, cP: .30, fP: .30, note: 'Protein + Fett. Wenig KH.' },
+  { label: 'Frühstück',        time: '08:00', icon: '🌅', kP: .32, pP: .32, cP: .25, fP: .28, note: 'Größte Mahlzeit des Tages. ~3g Leucin sicherstellen (z.B. Eier + Quark, Whey-Shake). Protein-betont.' },
+  { label: 'Mittagessen',      time: '12:30', icon: '🌿', kP: .28, pP: .28, cP: .25, fP: .30, note: 'Ausgewogen. Hochwertige Proteinquellen (Fisch, Hülsenfrüchte, Geflügel).' },
+  { label: 'Nachmittagssnack', time: '16:00', icon: '🫐', kP: .15, pP: .15, cP: .20, fP: .12, note: 'Klein. Protein + gesunde Fette.' },
+  { label: 'Abendessen',       time: '19:00', icon: '🌙', kP: .25, pP: .25, cP: .30, fP: .30, note: '30–40g Casein ~30min vor dem Schlafen (Quark, Casein-Shake). Wenig KH.' },
 ];
 
 // ─── Trainingstag (dynamisch) ─────────────────────────────────────────────────
@@ -44,9 +54,9 @@ export const REST_MEALS = [
  * Berechnet 4 Mahlzeiten relativ zur Trainingszeit.
  *
  * Struktur je nach Trainingszeit (T):
- *   Frühtraining  (Pre < 10:30): Pre → Post → Mittagessen → Abendessen
- *   Mitteltraining(Pre 10:30–13:00): Frühstück → Pre → Post → Abendessen
- *   Spättraining  (Pre ≥ 13:00):  Frühstück → Mittagessen → Pre → Post
+ *   Frühtraining   (Pre < 10:30): Pre → Post → Mittagessen → Abendessen
+ *   Mitteltraining (Pre 10:30–13:00): Frühstück → Pre → Post → Abendessen
+ *   Spättraining   (Pre ≥ 13:00):  Frühstück → Mittagessen → Pre → Post
  *
  * Makro-Quoten: kP, pP, cP, fP summieren jeweils exakt zu 1.00.
  *
@@ -63,43 +73,43 @@ export function generateTrainingDayMeals(trainingTimeStr) {
   const AFTERNOON_CUTOFF = 13.0 * 60; // 13:00 — Grenze Spättraining
 
   // ── Frühtraining (Pre < 10:30): Pre → Post → Mittagessen → Abendessen ──
+  // k=.22+.30+.28+.20=1.00  p=.22+.30+.26+.22=1.00  c=.28+.38+.24+.10=1.00  f=.12+.18+.35+.35=1.00 ✓
   if (pre < EARLY_CUTOFF) {
     const lunch  = clamp(Math.max(post + 150, 12 * 60), post + 90,  14 * 60);
     const dinner = clamp(Math.max(lunch + 180, 18 * 60), lunch + 150, 21 * 60);
     return [
-      { label: 'Pre-Workout',  time: toStr(pre),    icon: '⚡', kP: .22, pP: .18, cP: .40, fP: .12, note: 'Leicht, KH-betont. Keine schweren Fette.' },
-      { label: 'Post-Workout', time: toStr(post),   icon: '💪', kP: .30, pP: .32, cP: .30, fP: .18, note: 'Wichtigste Mahlzeit. Protein + KH.' },
-      { label: 'Mittagessen',  time: toStr(lunch),  icon: '🌿', kP: .28, pP: .28, cP: .20, fP: .35, note: 'Ausgewogen.' },
-      { label: 'Abendessen',   time: toStr(dinner), icon: '🌙', kP: .20, pP: .22, cP: .10, fP: .35, note: 'Casein-reich. Wenig KH.' },
+      { label: 'Pre-Workout',  time: toStr(pre),    icon: '⚡', kP: .22, pP: .22, cP: .28, fP: .12, note: 'Leicht, moderate KH. ~3g Leucin sichern. Frauen verbrennen beim Training mehr Fett – weniger KH nötig als bei Männern.' },
+      { label: 'Post-Workout', time: toStr(post),   icon: '💪', kP: .30, pP: .30, cP: .38, fP: .18, note: 'Wichtigste Mahlzeit. Protein + KH für Glykogen. ~3g Leucin (z.B. 30g Whey + Banane).' },
+      { label: 'Mittagessen',  time: toStr(lunch),  icon: '🌿', kP: .28, pP: .26, cP: .24, fP: .35, note: 'Ausgewogen. Proteinreich.' },
+      { label: 'Abendessen',   time: toStr(dinner), icon: '🌙', kP: .20, pP: .22, cP: .10, fP: .35, note: '30–40g Casein ~30min vor dem Schlafen (Quark, Casein-Shake). Wenig KH.' },
     ];
-    // k=1.00  p=1.00  c=1.00  f=1.00 ✓
   }
 
   // ── Mitteltraining (Pre 10:30–13:00): Frühstück → Pre → Post → Abendessen ──
+  // k=.28+.20+.28+.24=1.00  p=.28+.20+.28+.24=1.00  c=.28+.28+.34+.10=1.00  f=.22+.12+.18+.48=1.00 ✓
   if (pre < AFTERNOON_CUTOFF) {
     const dinner = clamp(Math.max(post + 120, 18 * 60), post + 90, 21 * 60);
     return [
-      { label: 'Frühstück',    time: toStr(BREAKFAST), icon: '🌅', kP: .22, pP: .22, cP: .25, fP: .20, note: 'Protein + moderate KH.' },
-      { label: 'Pre-Workout',  time: toStr(pre),        icon: '⚡', kP: .22, pP: .18, cP: .40, fP: .12, note: 'Leicht, KH-betont. Keine schweren Fette.' },
-      { label: 'Post-Workout', time: toStr(post),       icon: '💪', kP: .30, pP: .32, cP: .25, fP: .18, note: 'Wichtigste Mahlzeit. Protein + KH.' },
-      { label: 'Abendessen',   time: toStr(dinner),     icon: '🌙', kP: .26, pP: .28, cP: .10, fP: .50, note: 'Casein-reich. Wenig KH.' },
+      { label: 'Frühstück',    time: toStr(BREAKFAST), icon: '🌅', kP: .28, pP: .28, cP: .28, fP: .22, note: 'Größte Mahlzeit des Tages. ~3g Leucin (z.B. Eier + Quark, Whey-Shake). Protein-betont.' },
+      { label: 'Pre-Workout',  time: toStr(pre),        icon: '⚡', kP: .20, pP: .20, cP: .28, fP: .12, note: 'Leicht, moderate KH. Frauen verbrennen beim Training mehr Fett – weniger KH nötig als bei Männern.' },
+      { label: 'Post-Workout', time: toStr(post),       icon: '💪', kP: .28, pP: .28, cP: .34, fP: .18, note: 'Protein + KH für Glykogen. ~3g Leucin (z.B. 30g Whey + Banane).' },
+      { label: 'Abendessen',   time: toStr(dinner),     icon: '🌙', kP: .24, pP: .24, cP: .10, fP: .48, note: '30–40g Casein ~30min vor dem Schlafen (Quark, Casein-Shake). Wenig KH.' },
     ];
-    // k=1.00  p=1.00  c=1.00  f=1.00 ✓
   }
 
   // ── Spättraining (Pre ≥ 13:00): Frühstück → Mittagessen → Pre → Post ──
+  // k=.30+.24+.20+.26=1.00  p=.28+.22+.18+.32=1.00  c=.28+.28+.28+.16=1.00  f=.22+.18+.12+.48=1.00 ✓
   const lunch = clamp(
     Math.round((BREAKFAST + pre) / 2),
     BREAKFAST + 90,
     pre - 90,
   );
   return [
-    { label: 'Frühstück',    time: toStr(BREAKFAST), icon: '🌅', kP: .22, pP: .22, cP: .25, fP: .20, note: 'Protein + moderate KH.' },
-    { label: 'Mittagessen',  time: toStr(lunch),      icon: '🌿', kP: .28, pP: .22, cP: .35, fP: .18, note: 'KH-betont vor dem Abendtraining.' },
-    { label: 'Pre-Workout',  time: toStr(pre),         icon: '⚡', kP: .22, pP: .18, cP: .30, fP: .12, note: 'Leicht, KH-betont. Keine schweren Fette.' },
-    { label: 'Post-Workout', time: toStr(post),        icon: '💪', kP: .28, pP: .38, cP: .10, fP: .50, note: 'Protein-reich. Casein nach dem Abendtraining.' },
+    { label: 'Frühstück',    time: toStr(BREAKFAST), icon: '🌅', kP: .30, pP: .28, cP: .28, fP: .22, note: 'Größte Mahlzeit des Tages. ~3g Leucin (z.B. Eier + Quark, Whey-Shake). Protein-betont.' },
+    { label: 'Mittagessen',  time: toStr(lunch),      icon: '🌿', kP: .24, pP: .22, cP: .28, fP: .18, note: 'Moderate KH vor dem Abendtraining. Hochwertige Proteinquellen.' },
+    { label: 'Pre-Workout',  time: toStr(pre),         icon: '⚡', kP: .20, pP: .18, cP: .28, fP: .12, note: 'Leicht, moderate KH. Frauen verbrennen beim Training mehr Fett – weniger KH nötig als bei Männern.' },
+    { label: 'Post-Workout', time: toStr(post),        icon: '💪', kP: .26, pP: .32, cP: .16, fP: .48, note: 'Protein-reich. 30–40g Casein ~30min vor dem Schlafen (Quark, Casein-Shake).' },
   ];
-  // k=1.00  p=1.00  c=1.00  f=1.00 ✓
 }
 
 // ─── Öffentliche API ─────────────────────────────────────────────────────────
