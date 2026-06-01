@@ -26,7 +26,22 @@ export const INDEXED_DB_MIGRATIONS = {
     weekStore.createIndex('updatedAt', 'updatedAt', { unique: false });
   },
 
-  // v2: kommt in Phase 3 (Mahlzeiten-Details)
+  /**
+   * v2: Phase 3A — Favoriten-Lebensmittel + Mahlzeit-Vorlagen
+   * @param {import('idb').IDBPDatabase} db
+   */
+  2: (db) => {
+    // foodsCustom: manuell angelegte Lieblingslebensmittel
+    const foodsStore = db.createObjectStore('foodsCustom', { keyPath: 'id' });
+    foodsStore.createIndex('name', 'name', { unique: false });
+    foodsStore.createIndex('updatedAt', 'updatedAt', { unique: false });
+
+    // meals: Favoriten-Mahlzeiten (Kombis aus mehreren Lebensmitteln, Phase 3B+)
+    const mealsStore = db.createObjectStore('meals', { keyPath: 'id' });
+    mealsStore.createIndex('lastUsed', 'lastUsed', { unique: false });
+    mealsStore.createIndex('updatedAt', 'updatedAt', { unique: false });
+  },
+
   // v3: kommt in Phase 4 (Rezepte)
   // v4: kommt in Phase 5 (Körperwerte)
   // v5: kommt in Phase 6 (Sync-Metadaten)

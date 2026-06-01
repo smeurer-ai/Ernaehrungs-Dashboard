@@ -1,2 +1,2 @@
-export const APP_VERSION = '1.1.1';
-export const SCHEMA_VERSION = 1; // Identisch mit IndexedDB-Version
+export const APP_VERSION = '1.2.0';
+export const SCHEMA_VERSION = 2; // Phase 3A: foodsCustom + meals
