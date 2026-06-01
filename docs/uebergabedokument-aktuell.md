@@ -206,4 +206,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-01 · APP_VERSION 1.2.1 · SCHEMA_VERSION 2 · Phase 3D abgeschlossen*
+*Zuletzt aktualisiert: 2026-06-01 · APP_VERSION 1.2.1 · SCHEMA_VERSION 2 · Commit 526ccd6*
