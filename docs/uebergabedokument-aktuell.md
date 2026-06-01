@@ -172,6 +172,7 @@ Ausführen: `npm test` im Projekt-Root.
 | TS-05 | IndexedDB-Doppelöffnung (migrations.js + indexeddb.js) | Phase 3B |
 | TS-06 | Toast außerhalb Provider schlägt lautlos fehl | Phase 3B |
 | TS-07 | Google Fonts nicht offline-fähig | Phase 3+ optional |
+| TS-08 | `new Date().toISOString()` nutzt UTC → kurz nach Mitternacht falsches Datum | Gemeinsamer Fix HeuteTab + Tracker |
 
 ---
 

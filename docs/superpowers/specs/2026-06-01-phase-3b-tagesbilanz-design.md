@@ -1,7 +1,7 @@
 # Phase 3B — Tagesbilanz: Design-Spec
 
 **Datum:** 2026-06-01  
-**Status:** Freigegeben  
+**Status:** Review-korrigiert, bereit zur Implementierung  
 **APP_VERSION nach Umsetzung:** 1.2.2  
 
 ---
@@ -83,7 +83,7 @@ HeuteTab
 ### `HeuteTab.js`
 
 - Importiert `useLog`, `sumConsumed`, `groupProteinBySlot`
-- Berechnet `today` per `new Date().toISOString().split('T')[0]`
+- Berechnet `today` per `new Date().toISOString().split('T')[0]` (UTC — bewusst konsistent mit `useLog`/Tracker; lokale Datumsfunktion als gemeinsamer Fix in separatem Cleanup, siehe TS-08)
 - Leitet `consumed` an `DaySummary` weiter
 - Leitet `consumedBySlot` an `MealPlanList` weiter
 
@@ -95,13 +95,16 @@ HeuteTab
 ### `MealPlanList.js`
 
 - Erhält neues Prop `consumedBySlot`
-- Reicht `consumedBySlot[meal.label]` als `consumedProtein` an jedes `MealPlanEntry` weiter
+- Berechnet `consumedProtein` pro Slot: `consumedBySlot ? (consumedBySlot[meal.label] ?? 0) : undefined`
+  - `consumedBySlot` vorhanden → jeder Slot bekommt einen Wert (0 wenn nichts erfasst)
+  - `consumedBySlot` fehlt (Phase 3B noch nicht geladen) → `undefined`, keine Protein-Zeile
 
 ### `MealPlanEntry.js`
 
 Neue Protein-Zeile unterhalb der bestehenden Makro-Chips.
 
-**Sichtbarkeit:** Zeile erscheint wenn `consumedProtein !== undefined` (0 ist gültig).
+**Sichtbarkeit:** Zeile erscheint wenn `consumedProtein !== undefined`.  
+→ Bei `consumedBySlot` vorhanden: alle Slots zeigen eine Zeile (auch leere mit "Noch nicht erfasst").
 
 **Darstellung:**
 
