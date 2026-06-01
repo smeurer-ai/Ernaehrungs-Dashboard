@@ -19,7 +19,7 @@
  * @returns {number} Tagesumsatz in kcal, ganzzahlig gerundet
  *
  * @example
- * calcTDEE(1523, 1.5) // → 2285  (Math.round(2284.5) = 2285, nicht 2284)
+ * calcTDEE(1523, 1.5) // → 2285 kcal
  * calcTDEE(1000, 1.5) // → 1500
  */
 export function calcTDEE(bmr, factor) {
