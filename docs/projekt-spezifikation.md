@@ -98,6 +98,11 @@ Bestehende Tracker-Apps (MyFitnessPal etc.) sind generisch, datenschutzkritisch,
 
 > *"Hilft diese Funktion einer postmenopausalen Frau dabei, Fett zu verlieren und gleichzeitig Muskulatur zu erhalten oder aufzubauen?"*
 
+**Frage 2 (MPS-Fokus):**
+> *"Hilft diese Funktion dabei, die Muskelproteinsynthese (MPS) im Alltag besser zu erreichen?"*
+
+Wenn **beide** Fragen mit Nein beantwortet werden → Funktion gehört nicht in den Kern.
+
 - Lautet die Antwort **nein**, gehört die Funktion **nicht in den Kern der App**.
 - Diese Maxime ist bindend für alle Feature-Entscheidungen in allen Phasen.
 - Bei Konflikten zwischen "wäre nett zu haben" und der Maxime gewinnt die Maxime.

@@ -77,6 +77,23 @@ function seedDefaults() {
     };
     localStorage.setItem(UI_STATE_KEY, JSON.stringify(defaultUiState));
   }
+
+  // Profil-Defaults (nur Ergänzung fehlender Felder — Profil selbst wird vom Erststart-Wizard gesetzt)
+  const PROFILE_KEY = 'ernaehrung_profile';
+  const existingProfile = localStorage.getItem(PROFILE_KEY);
+  if (existingProfile) {
+    const profile = JSON.parse(existingProfile);
+    let changed = false;
+    if (profile.proteinTargetMode === undefined) {
+      profile.proteinTargetMode = 'perKgLeanMass';
+      changed = true;
+    }
+    if (profile.proteinPerKg === undefined) {
+      profile.proteinPerKg = 2.0;
+      changed = true;
+    }
+    if (changed) localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  }
 }
 
 /**

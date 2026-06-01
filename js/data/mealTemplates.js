@@ -18,6 +18,13 @@
  * Ruhetag: feste Mahlzeiten.
  */
 
+// ─── Flexibilität: Mahlzeitenanzahl ──────────────────────────────────────────
+// Die Berechnungslogik (distributeMacrosPerMeal in macros.js) ist bereits
+// generisch und funktioniert mit 3, 4 oder 5 Mahlzeiten ohne Codeänderung.
+// kP/pP/cP/fP-Proportionen müssen jeweils zu 1.00 summieren — unabhängig
+// von der Anzahl. Neue Szenarien = neues Array mit korrekten Summen.
+// Die aktuelle 4-Mahlzeiten-Struktur bleibt der Standard (Stand: Phase 2).
+
 // ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 
 /** "HH:MM" → Minuten seit Mitternacht */

@@ -16,7 +16,7 @@ export function ErststartAssistent({ onComplete }) {
     onComplete({
       id: (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
       name: '', weight: w, height: parseFloat(height), age: parseInt(age), bodyFat: bf, leanMass,
-      deficit: 300, proteinPerKg: 1.9, proteinTargetMode: 'perKgBodyweight',
+      deficit: 300, proteinPerKg: 2.0, proteinTargetMode: 'perKgLeanMass',
       trainingFactor: 1.55, restFactor: 1.35, fatPercent: 0.25, strengthTrainingDaysPerWeek: 3,
       createdAt: Date.now(), updatedAt: Date.now(),
       deviceId: localStorage.getItem('ernaehrung_device_id') || '',
