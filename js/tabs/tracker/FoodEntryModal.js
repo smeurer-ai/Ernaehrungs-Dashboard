@@ -34,8 +34,12 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
   const isEdit = !!initialEntry;
   // mealSlots?.length statt ?? — leeres Array fällt auf Default zurück
   const slots = mealSlots?.length ? mealSlots : DEFAULT_MEAL_SLOTS;
-  // defaultSlot auf Gültigkeit prüfen, damit kein ungültiger Wert im Select landet
-  const initialSlot = slots.includes(defaultSlot) ? defaultSlot : slots[0];
+  // Slot-Priorität: initialEntry.mealSlot → defaultSlot → slots[0]
+  const initialSlot = slots.includes(initialEntry?.mealSlot)
+    ? initialEntry.mealSlot
+    : slots.includes(defaultSlot)
+      ? defaultSlot
+      : slots[0];
 
   const [slot, setSlot] = useState(initialSlot);
   const [name, setName] = useState('');
@@ -51,9 +55,17 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
   // (factor = 100 / entry.gramm → entry.kcal * factor = kcal100).
   useEffect(() => {
     if (!open) return;
+    // Slot-Priorität: initialEntry.mealSlot → defaultSlot → slots[0]
+    // slots wird aus mealSlots abgeleitet (in dep-Array), kein hardcoded MEAL_SLOTS
+    const safeSlot = slots.includes(initialEntry?.mealSlot)
+      ? initialEntry.mealSlot
+      : slots.includes(defaultSlot)
+        ? defaultSlot
+        : slots[0];
+
     if (initialEntry) {
       const f = initialEntry.gramm > 0 ? 100 / initialEntry.gramm : 0;
-      setSlot(initialEntry.mealSlot);
+      setSlot(safeSlot);
       setName(initialEntry.foodName);
       setGramm(String(initialEntry.gramm));
       setKcal100(String(Math.round(initialEntry.kcal * f)));
@@ -61,7 +73,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
       setC100(String(Math.round(initialEntry.c * f * 10) / 10));
       setF100(String(Math.round(initialEntry.f * f * 10) / 10));
     } else {
-      setSlot(slots.includes(defaultSlot) ? defaultSlot : slots[0]);
+      setSlot(safeSlot);
       setName('');
       setGramm('');
       setKcal100('');
@@ -70,7 +82,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
       setF100('');
       setSaveFav(false);
     }
-  }, [open, initialEntry]);
+  }, [open, initialEntry, defaultSlot, mealSlots]);
 
   const handleFavSelect = (fav) => {
     setName(fav.name);
