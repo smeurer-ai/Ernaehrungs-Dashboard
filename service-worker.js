@@ -1,7 +1,7 @@
 // service-worker.js
 // Version muss mit js/version.js synchron gehalten werden.
 // Bei jedem Phase-Release: APP_VERSION hochzählen.
-const APP_VERSION = '1.2.2';
+const APP_VERSION = '1.2.3';
 const CACHE_STATIC = `ernaehrung-static-${APP_VERSION}`;
 const CACHE_CDN    = `ernaehrung-cdn-${APP_VERSION}`;
 

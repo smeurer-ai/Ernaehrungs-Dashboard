@@ -47,6 +47,9 @@ function openDb() {
  * @property {number}  c         - KH in g
  * @property {number}  f         - Fett in g
  * @property {number}  timestamp
+ * @property {number}  [leucineEstimateG]    - Geschätzter Leucin-Gehalt in g (Phase 3E)
+ * @property {number}  [proteinQualityScore] - Qualitätsscore 0–1 (Phase 3E)
+ * @property {boolean} [mpsTriggered]        - Leucin-Schwelle wahrscheinlich erreicht (Phase 3E)
  */
 
 /**
