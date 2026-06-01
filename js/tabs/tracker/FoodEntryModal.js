@@ -1,0 +1,268 @@
+import { html, useState, useEffect, useMemo } from '../../lib.js';
+import { S, COLORS, FONTS } from '../../ui/theme.js';
+import { Modal } from '../../ui/Modal.js';
+import { FavoritePicker } from './FavoritePicker.js';
+import { calcTrackedFoodMacros } from '../../calc/tracker.js';
+
+/** Generiert eine einfache, eindeutige ID */
+function generateId() {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+// Fallback-Liste wenn keine mealSlots-Prop übergeben wird
+const DEFAULT_MEAL_SLOTS = [
+  'Frühstück', 'Pre-Workout', 'Post-Workout',
+  'Mittagessen', 'Nachmittagssnack', 'Abendessen', 'Snack',
+];
+
+/**
+ * Modal für Mahlzeit-Eingabe (manuell oder aus Favoriten).
+ *
+ * @param {{
+ *   open: boolean,
+ *   onClose: function,
+ *   onSave: function,           // (trackedFood, saveFavorite?) => void
+ *   favorites: FavoriteFood[],
+ *   initialEntry?: TrackedFood, // wenn gesetzt: Edit-Modus
+ *   defaultSlot?: string,
+ *   mealSlots?: string[],       // dynamische Slot-Namen aus TrackerTab
+ * }} props
+ */
+export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry, defaultSlot, mealSlots }) {
+  const isEdit = !!initialEntry;
+  // mealSlots?.length statt ?? — leeres Array fällt auf Default zurück
+  const slots = mealSlots?.length ? mealSlots : DEFAULT_MEAL_SLOTS;
+  // defaultSlot auf Gültigkeit prüfen, damit kein ungültiger Wert im Select landet
+  const initialSlot = slots.includes(defaultSlot) ? defaultSlot : slots[0];
+
+  const [slot, setSlot] = useState(initialSlot);
+  const [name, setName] = useState('');
+  const [gramm, setGramm] = useState('');
+  const [kcal100, setKcal100] = useState('');
+  const [p100, setP100] = useState('');
+  const [c100, setC100] = useState('');
+  const [f100, setF100] = useState('');
+  const [saveFav, setSaveFav] = useState(false);
+
+  // Formular zurücksetzen / mit initialEntry befüllen wenn Modal geöffnet wird.
+  // Im Edit-Modus: Per-100g-Werte aus vorhandenem Eintrag zurückrechnen
+  // (factor = 100 / entry.gramm → entry.kcal * factor = kcal100).
+  useEffect(() => {
+    if (!open) return;
+    if (initialEntry) {
+      const f = initialEntry.gramm > 0 ? 100 / initialEntry.gramm : 0;
+      setSlot(initialEntry.mealSlot);
+      setName(initialEntry.foodName);
+      setGramm(String(initialEntry.gramm));
+      setKcal100(String(Math.round(initialEntry.kcal * f)));
+      setP100(String(Math.round(initialEntry.p * f * 10) / 10));
+      setC100(String(Math.round(initialEntry.c * f * 10) / 10));
+      setF100(String(Math.round(initialEntry.f * f * 10) / 10));
+    } else {
+      setSlot(slots.includes(defaultSlot) ? defaultSlot : slots[0]);
+      setName('');
+      setGramm('');
+      setKcal100('');
+      setP100('');
+      setC100('');
+      setF100('');
+      setSaveFav(false);
+    }
+  }, [open, initialEntry]);
+
+  const handleFavSelect = (fav) => {
+    setName(fav.name);
+    setKcal100(String(fav.kcal100));
+    setP100(String(fav.p100));
+    setC100(String(fav.c100));
+    setF100(String(fav.f100));
+    setSaveFav(false);
+  };
+
+  // Live-Vorschau der Makros
+  const preview = useMemo(() => {
+    const g = parseFloat(gramm);
+    const k = parseFloat(kcal100);
+    const p = parseFloat(p100);
+    const c = parseFloat(c100);
+    const f = parseFloat(f100);
+    if (!g || isNaN(g) || isNaN(k) || k < 0) return null;
+    return calcTrackedFoodMacros(
+      { kcal100: k || 0, p100: p || 0, c100: c || 0, f100: f || 0 },
+      g,
+    );
+  }, [gramm, kcal100, p100, c100, f100]);
+
+  const canSave = name.trim() && parseFloat(gramm) > 0 && preview !== null;
+
+  function handleSave() {
+    if (!canSave) return;
+
+    const entry = {
+      id: initialEntry?.id ?? generateId(),
+      mealSlot: slot,
+      foodName: name.trim(),
+      foodRef: 'manual',
+      gramm: parseFloat(gramm),
+      kcal: preview.kcal,
+      p: preview.p,
+      c: preview.c,
+      f: preview.f,
+      timestamp: initialEntry?.timestamp ?? Date.now(),
+    };
+
+    const favData = saveFav ? {
+      id: generateId(),
+      name: name.trim(),
+      kcal100: parseFloat(kcal100) || 0,
+      p100: parseFloat(p100) || 0,
+      c100: parseFloat(c100) || 0,
+      f100: parseFloat(f100) || 0,
+      source: 'manual',
+    } : null;
+
+    onSave(entry, favData);
+    onClose();
+  }
+
+  if (!open) return null;
+
+  return html`
+    <${Modal} open=${open} onClose=${onClose}>
+      <div style=${{ padding: '4px 0' }}>
+        <!-- Titel -->
+        <div style=${{ ...S.cardTitle, fontSize: '12px', marginBottom: '14px' }}>
+          ${isEdit ? 'Eintrag bearbeiten' : 'Mahlzeit eintragen'}
+        </div>
+
+        <!-- Mahlzeit-Slot -->
+        <label style=${S.label}>Mahlzeit</label>
+        <select
+          value=${slot}
+          onChange=${e => setSlot(e.target.value)}
+          style=${{ ...S.input, marginBottom: '14px' }}
+        >
+          ${slots.map(s => html`<option key=${s} value=${s}>${s}</option>`)}
+        </select>
+
+        <!-- Favoriten-Picker (nur im Neueingabe-Modus) -->
+        ${!isEdit && html`
+          <label style=${{ ...S.label, marginBottom: '6px' }}>Aus Favoriten</label>
+          <${FavoritePicker} favorites=${favorites} onSelect=${handleFavSelect} />
+          <div style=${{
+            textAlign: 'center',
+            fontSize: '10px',
+            color: COLORS.textMuted,
+            fontFamily: FONTS.mono,
+            margin: '10px 0 12px',
+            letterSpacing: '0.08em',
+          }}>— oder manuell eingeben —</div>
+        `}
+
+        <!-- Name -->
+        <label style=${S.label}>Name</label>
+        <input
+          type="text"
+          value=${name}
+          placeholder="z.B. Magerquark"
+          onInput=${e => setName(e.target.value)}
+          style=${{ ...S.input, marginBottom: '10px' }}
+        />
+
+        <!-- Gramm -->
+        <label style=${S.label}>Menge (g)</label>
+        <input
+          type="number"
+          value=${gramm}
+          placeholder="z.B. 200"
+          min="1"
+          onInput=${e => setGramm(e.target.value)}
+          style=${{ ...S.input, marginBottom: '10px' }}
+        />
+
+        <!-- Makros pro 100g -->
+        <label style=${{ ...S.label, marginBottom: '6px' }}>Makros pro 100g</label>
+        <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
+          ${[
+            ['kcal/100g', kcal100, setKcal100],
+            ['P/100g',    p100,    setP100],
+            ['KH/100g',   c100,    setC100],
+            ['F/100g',    f100,    setF100],
+          ].map(([lbl, val, set]) => html`
+            <div key=${lbl}>
+              <label style=${{ ...S.label, fontSize: '10px' }}>${lbl}</label>
+              <input
+                type="number"
+                value=${val}
+                min="0"
+                step="0.1"
+                onInput=${e => set(e.target.value)}
+                style=${S.input}
+              />
+            </div>
+          `)}
+        </div>
+
+        <!-- Vorschau -->
+        ${preview && html`
+          <div style=${{
+            background: '#1a1a12',
+            border: `1px solid ${COLORS.gold}33`,
+            borderRadius: '8px',
+            padding: '8px 12px',
+            marginBottom: '14px',
+            fontFamily: FONTS.mono,
+            fontSize: '12px',
+            color: COLORS.text,
+          }}>
+            ${preview.kcal} kcal · ${preview.p}g P · ${preview.c}g KH · ${preview.f}g F
+          </div>
+        `}
+
+        <!-- Als Favorit speichern (nur Neueingabe) -->
+        ${!isEdit && html`
+          <label style=${{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '16px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            color: COLORS.textMuted,
+            fontFamily: FONTS.mono,
+          }}>
+            <input
+              type="checkbox"
+              checked=${saveFav}
+              onChange=${e => setSaveFav(e.target.checked)}
+              style=${{ accentColor: COLORS.gold }}
+            />
+            Als Favorit speichern
+          </label>
+        `}
+
+        <!-- Buttons -->
+        <div style=${{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick=${onClose}
+            style=${{ ...S.btn('#222', COLORS.text), flex: 1 }}
+          >
+            Abbrechen
+          </button>
+          <button
+            onClick=${handleSave}
+            disabled=${!canSave}
+            style=${{
+              ...S.btn(canSave ? COLORS.gold : '#333', canSave ? '#111' : '#666'),
+              flex: 1,
+            }}
+          >
+            ${isEdit ? 'Speichern' : 'Eintragen'}
+          </button>
+        </div>
+      </div>
+    </${Modal}>
+  `;
+}
