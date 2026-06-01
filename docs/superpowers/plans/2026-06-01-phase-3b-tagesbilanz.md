@@ -253,52 +253,39 @@ import { sumConsumed, groupProteinBySlot } from '../../calc/tracker.js';
 import { S, COLORS } from '../../ui/theme.js';
 ```
 
-- [ ] **Schritt 2: Hook-Aufrufe und Ableitungen hinzufügen**
+- [ ] **Schritt 2: `useLog`-Ableitungen und Props gezielt einbauen**
 
-Den Funktionsrumpf von `HeuteTab` komplett ersetzen:
+**a) Ableitungen einfügen** — direkt nach `const { preferredDayType: dayType, preferredTrainingTime: trainingTime } = uiState;`:
 
 ```js
-export function HeuteTab({ profile, calculated }) {
-  const [uiState, updateUiState] = useUiState();
-  const { preferredDayType: dayType, preferredTrainingTime: trainingTime } = uiState;
-
   const today = new Date().toISOString().split('T')[0];
-  const { entries } = useLog(today, { dayType, trainingTime });
+  const { entries, loading } = useLog(today, { dayType, trainingTime });
+  const consumed = loading
+    ? { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+    : sumConsumed(entries);
+  const consumedBySlot = loading ? undefined : groupProteinBySlot(entries);
+```
 
-  const consumed = sumConsumed(entries);
-  const consumedBySlot = groupProteinBySlot(entries);
+`loading ? undefined` für `consumedBySlot` verhindert Flackern: Protein-Zeilen erscheinen erst wenn IndexedDB fertig geladen ist.
 
-  if (!profile || !calculated) {
-    return html`
-      <div style=${{ ...S.content, textAlign: 'center', paddingTop: '60px', color: COLORS.textMuted }}>
-        Profil wird geladen…
-      </div>
-    `;
-  }
+**b) `DaySummary`-Zeile anpassen** (bestehende Zeile ersetzen):
 
-  const macros = dayType === 'training' ? calculated.macrosTraining : calculated.macrosRest;
-
-  return html`
-    <div style=${S.content}>
-      <${DayTypeSwitch}
-        dayType=${dayType}
-        trainingTime=${trainingTime}
-        onDayTypeChange=${d => updateUiState({ preferredDayType: d })}
-        onTrainingTimeChange=${t => updateUiState({ preferredTrainingTime: t })}
-      />
+```js
       <${DaySummary} macros=${macros} consumed=${consumed} />
-      <div style=${S.cardTitle}>Mahlzeitenplan</div>
+```
+
+**c) `MealPlanList`-Aufruf anpassen** (bestehende Zeile ersetzen):
+
+```js
       <${MealPlanList}
         dayType=${dayType}
         trainingTime=${trainingTime}
         macros=${macros}
         consumedBySlot=${consumedBySlot}
       />
-      <${HydrationCard} dayType=${dayType} trainingTime=${trainingTime} />
-    </div>
-  `;
-}
 ```
+
+Alle anderen Teile der Datei (`DayTypeSwitch`, `HydrationCard`, Early-Return) bleiben unverändert.
 
 - [ ] **Schritt 3: App manuell prüfen**
 
