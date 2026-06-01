@@ -4,7 +4,7 @@
 **Phase:** 3A von 3E (Phase-3-Teilphase)  
 **Datum:** 2026-06-01  
 **Branch:** `phase-3-tracker`  
-**Status:** ✅ Implementiert, getestet, gepusht — PR offen
+**Status:** ✅ Implementiert, getestet, gepusht — PR bereit
 
 ---
 
@@ -29,7 +29,7 @@ Phase 3A liefert das vollständige Tracker-Fundament: manuelle Mahlzeit-Eingabe,
 | `js/tabs/tracker/TrackerTab.js` | Haupt-Komponente (ersetzt Phase-1-Platzhalter) |
 | `docs/superpowers/plans/2026-06-01-phase-3a-tracker-fundament.md` | Implementierungsplan |
 
-## 3. Geänderte Dateien (4)
+## 3. Geänderte Dateien (5)
 
 | Datei | Änderung |
 |---|---|
@@ -119,4 +119,4 @@ Dependencies: `[open, initialEntry, defaultSlot, mealSlots]` — vollständig.
 
 ---
 
-*Erstellt: 2026-06-01 · Branch: phase-3-tracker · Letzter Commit: 3bfe0b5*
+*Erstellt: 2026-06-01 · Branch: phase-3-tracker · Letzter Commit: eee903c*
