@@ -75,8 +75,8 @@ describe('isMainMealSlot', () => {
     expect(isMainMealSlot('Post-Workout')).toBe(true);
   });
 
-  it('klassifiziert Snack als Snack-Mahlzeit', () => {
-    expect(isMainMealSlot('Snack')).toBe(false);
+  it('klassifiziert Nachmittagssnack als Snack-Mahlzeit (echter Produktions-Slot)', () => {
+    expect(isMainMealSlot('Nachmittagssnack')).toBe(false);
   });
 
   it('klassifiziert Casein als Snack-Mahlzeit', () => {
@@ -153,6 +153,18 @@ describe('rateMealProtein', () => {
     expect(r.rating).toBe('insufficient');
     expect(r.leucineLikelihood).toBe('low');
   });
+
+  it('gibt insufficient zurück bei undefined ohne Crash', () => {
+    const r = rateMealProtein(undefined, true, {});
+    expect(r.rating).toBe('insufficient');
+    expect(r.leucineLikelihood).toBe('low');
+  });
+
+  it('gibt insufficient zurück bei NaN ohne Crash', () => {
+    const r = rateMealProtein(NaN, true, {});
+    expect(r.rating).toBe('insufficient');
+    expect(r.leucineLikelihood).toBe('low');
+  });
 });
 ```
 
@@ -177,17 +189,20 @@ Erwartetes Ergebnis: **Fehler** — `isMainMealSlot is not a function` sowie meh
 /**
  * Klassifiziert einen Mahlzeit-Slot als Haupt- oder Snack-Mahlzeit.
  *
- * Hauptmahlzeiten (true):  alle Slots außer Snack und Casein.
- * Snack-Mahlzeiten (false): Snack, Casein.
+ * Hauptmahlzeiten (true):  alle Slots, deren Name weder 'snack' noch 'casein' enthält.
+ * Snack-Mahlzeiten (false): 'Nachmittagssnack', 'Snack', 'Casein' u.ä.
  * Unbekannte Slots:         true (konservativ — strengere Leucin-Schwelle,
  *                           lieber eine unnötige Warnung als eine fehlende).
+ *
+ * Substring-Matching (toLowerCase) statt exakter Set-Prüfung, damit
+ * zukünftige Slots wie 'Morgensnack' automatisch korrekt klassifiziert werden.
  *
  * @param {string} slotName
  * @returns {boolean}
  */
 export function isMainMealSlot(slotName) {
-  const SNACK_SLOTS = new Set(['Snack', 'Casein']);
-  return !SNACK_SLOTS.has(slotName);
+  const name = (slotName || '').toLowerCase();
+  return !name.includes('snack') && !name.includes('casein');
 }
 ```
 
@@ -253,8 +268,8 @@ export function rateMealProtein(mealProteinG, isMainMeal, profile) {
 npm test
 ```
 
-Erwartetes Ergebnis: **97 Tests, alle grün.**  
-Falls Fehler: Schwellenwerte und Set-Schreibweise (`'Snack'`, `'Casein'`) prüfen.
+Erwartetes Ergebnis: **99 Tests, alle grün.**  
+Falls Fehler: Schwellenwerte und `toLowerCase().includes()`-Logik in `isMainMealSlot` prüfen.
 
 - [ ] **Schritt 4: Committen**
 
@@ -278,7 +293,7 @@ import { html } from '../../lib.js';
 ```
 ersetzen durch:
 ```js
-import { html, useState, Fragment } from '../../lib.js';
+import { html, useState } from '../../lib.js';
 import { groupProteinBySlot } from '../../calc/tracker.js';
 import { isMainMealSlot, rateMealProtein } from '../../calc/nutritionLogic.js';
 ```
@@ -403,7 +418,7 @@ Prüfen:
 - [ ] Slot mit < 20 g: rotes `~✗ Leucin`-Badge
 - [ ] Klick auf ℹ️ öffnet Schätzungs-Hinweis
 - [ ] Klick auf Hinweis selbst schließt ihn wieder
-- [ ] "Snack"- und "Casein"-Slots nutzen niedrigere Schwellen (≥ 15 g für grün)
+- [ ] "Nachmittagssnack"-Slot nutzt niedrigere Snack-Schwelle (≥ 15 g für grün, nicht 30 g)
 
 - [ ] **Schritt 5: Committen**
 
@@ -466,7 +481,7 @@ const APP_VERSION = '1.2.3';
 npm test
 ```
 
-Erwartetes Ergebnis: **97 Tests, alle grün.**
+Erwartetes Ergebnis: **99 Tests, alle grün.**
 
 - [ ] **Schritt 5: Final-Commit**
 
@@ -479,7 +494,7 @@ git commit -m "chore: TrackedFood-JSDoc + APP_VERSION 1.2.3 (Phase 3C)"
 
 ## Abschluss-Checkliste
 
-- [ ] 97 Tests grün (`npm test`)
+- [ ] 99 Tests grün (`npm test`)
 - [ ] Badge erscheint korrekt für alle Slot-Typen
 - [ ] Leere Slots zeigen kein Badge
 - [ ] ℹ️-Tooltip öffnet/schließt korrekt
