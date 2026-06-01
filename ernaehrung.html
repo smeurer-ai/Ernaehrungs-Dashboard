@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="theme-color" content="#111111"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Ernährung"/>
   <title>Ernährungs-Tool · Stephanie Meurer</title>
+  <link rel="manifest" href="./manifest.json"/>
+  <link rel="icon" href="./icons/icon-192.png" type="image/png"/>
+  <link rel="apple-touch-icon" href="./icons/icon-192.png"/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;600&family=DM+Mono:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -13,6 +20,7 @@
       color: #f0ece4;
       font-family: 'DM Sans', sans-serif;
       -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
     }
     input::-webkit-outer-spin-button,
     input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -20,7 +28,6 @@
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: #111; }
     ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-    /* Cursor auf dunklem Hintergrund sichtbar machen */
     * { cursor: inherit; }
     body { cursor: default; }
     button, [role="button"], label[style*="cursor"] { cursor: pointer !important; }
