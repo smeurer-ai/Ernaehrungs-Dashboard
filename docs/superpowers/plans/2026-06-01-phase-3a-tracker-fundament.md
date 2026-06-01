@@ -819,9 +819,12 @@ const DEFAULT_MEAL_SLOTS = [
  */
 export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry, defaultSlot, mealSlots }) {
   const isEdit = !!initialEntry;
-  const slots = mealSlots ?? DEFAULT_MEAL_SLOTS;
+  // mealSlots?.length statt ?? — leeres Array fällt auf Default zurück
+  const slots = mealSlots?.length ? mealSlots : DEFAULT_MEAL_SLOTS;
+  // defaultSlot auf Gültigkeit prüfen, damit kein ungültiger Wert im Select landet
+  const initialSlot = slots.includes(defaultSlot) ? defaultSlot : slots[0];
 
-  const [slot, setSlot] = useState(defaultSlot ?? slots[0] ?? 'Frühstück');
+  const [slot, setSlot] = useState(initialSlot);
   const [name, setName] = useState('');
   const [gramm, setGramm] = useState('');
   const [kcal100, setKcal100] = useState('');
@@ -845,7 +848,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
       setC100(String(Math.round(initialEntry.c * f * 10) / 10));
       setF100(String(Math.round(initialEntry.f * f * 10) / 10));
     } else {
-      setSlot(defaultSlot ?? slots[0] ?? 'Frühstück');
+      setSlot(slots.includes(defaultSlot) ? defaultSlot : slots[0]);
       setName('');
       setGramm('');
       setKcal100('');
@@ -928,7 +931,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
           onChange=${e => setSlot(e.target.value)}
           style=${{ ...S.input, marginBottom: '14px' }}
         >
-          ${MEAL_SLOTS.map(s => html`<option key=${s} value=${s}>${s}</option>`)}
+          ${slots.map(s => html`<option key=${s} value=${s}>${s}</option>`)}
         </select>
 
         <!-- Favoriten-Picker -->
