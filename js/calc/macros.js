@@ -19,7 +19,8 @@
  * @returns {number} Tagesumsatz in kcal, ganzzahlig gerundet
  *
  * @example
- * calcTDEE(1523, 1.5) // → 2284 kcal
+ * calcTDEE(1523, 1.5) // → 2285 kcal
+ * calcTDEE(1000, 1.5) // → 1500
  */
 export function calcTDEE(bmr, factor) {
   return Math.round(bmr * factor);
@@ -96,7 +97,10 @@ export function calcProteinTarget(profile) {
  *   proteinPerKg: 2.2,
  *   fatPercent: 0.28
  * }, 2000)
- * // → { kcal: 2000, protein: 117, fat: 62, carbs: 254 }
+ * // → { kcal: 2000, protein: 117, fat: 62, carbs: 244 }
+ * //   protein: Math.round(53.4 × 2.2) = 117g → 468 kcal
+ * //   fat:     Math.round(2000 × 0.28 / 9) = 62g → 558 kcal
+ * //   carbs:   Math.round((2000 - 468 - 558) / 4) = 244g
  */
 export function calcMacros(profile, totalKcal) {
   const protein = calcProteinTarget(profile);

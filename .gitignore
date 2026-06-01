@@ -2,3 +2,4 @@
 unpacked/
 *.pdf
 Übergabedokumente/
+node_modules/

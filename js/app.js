@@ -74,7 +74,12 @@ function App() {
   function renderTab() {
     switch (activeTab) {
       case 'heute':   return html`<${HeuteTab} profile=${profile} calculated=${calculated} />`;
-      case 'tracker': return html`<${TrackerTab} />`;
+      case 'tracker': return html`
+        <${TrackerTab}
+          dayType=${uiState.preferredDayType}
+          trainingTime=${uiState.preferredTrainingTime}
+        />
+      `;
       case 'rezepte': return html`<${RezepteTab} />`;
       case 'woche':   return html`<${WocheTab} />`;
       case 'profil':  return html`

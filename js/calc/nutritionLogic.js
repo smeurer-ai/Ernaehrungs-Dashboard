@@ -67,32 +67,80 @@ export function assessDeficit(profile, tdee) {
 }
 
 /**
- * Bewertet die Protein-Qualität einer Einzelmahlzeit.
+ * Bewertet die Protein-/Leucin-Wahrscheinlichkeit einer Einzelmahlzeit.
  *
- * STUB für Phase 1: Rückgabe mit Dummy-Daten.
- * Phase 3: Wird Leucin-Gehalt analysieren und detailliertes Feedback geben.
+ * Schwellen (aus Studiendaten: 3 g Leucin ≈ 30 g hochwertiges Protein):
+ *   Hauptmahlzeit: ≥ 30 g → good,  20–29 g → borderline,  < 20 g → insufficient
+ *   Snack:         ≥ 15 g → good,  10–14 g → borderline,  < 10 g → insufficient
  *
- * @param {number} mealProteinG - Protein in dieser Mahlzeit in Gramm
- * @param {boolean} isMainMeal - true=Hauptmahlzeit (Frühstück/Mittag/Abendessen), false=Snack
- * @param {Object} profile - Nutzerprofil mit Protein-Schwellen
- * @returns {Object} Bewertungsergebnis
- * @returns {number} returns.proteinG - Input Protein-Menge
- * @returns {string} returns.leucineLikelihood - Stub: 'high' | 'medium' | 'low'
- * @returns {string} returns.rating - Stub: 'good' | 'borderline' | 'insufficient'
- * @returns {string} [returns.hint] - Stub: undefined in Phase 1
+ * leucineLikelihood spiegelt das rating: high/medium/low.
+ * hint ist undefined bei good; enthält bei borderline/insufficient einen
+ * deutschsprachigen Hinweis mit dem Zusatz "(Schätzung aus Proteinmenge)".
+ *
+ * profile wird aktuell nicht ausgewertet — bleibt in der Signatur für
+ * spätere Personalisierung (individuelle Schwellen, Phase 3E+).
+ *
+ * @param {number|null} mealProteinG - Protein in g (null/undefined/NaN → insufficient)
+ * @param {boolean} isMainMeal       - true = Hauptmahlzeit, false = Snack
+ * @param {Object}  profile          - Nutzerprofil (aktuell ungenutzt)
+ * @returns {{ proteinG: number|null, leucineLikelihood: string, rating: string, hint: string|undefined }}
  *
  * @example
- * // Hauptmahlzeit mit 35g Protein
  * rateMealProtein(35, true, {})
  * // → { proteinG: 35, leucineLikelihood: 'high', rating: 'good', hint: undefined }
+ *
+ * @example
+ * rateMealProtein(25, true, {})
+ * // → { proteinG: 25, leucineLikelihood: 'medium', rating: 'borderline', hint: 'Proteinmenge grenzwertig...' }
  */
 export function rateMealProtein(mealProteinG, isMainMeal, profile) {
-  return {
-    proteinG: mealProteinG,
-    leucineLikelihood: 'high',
-    rating: mealProteinG >= 25 ? 'good' : mealProteinG >= 15 ? 'borderline' : 'insufficient',
-    hint: undefined
-  };
+  const g = (mealProteinG == null || isNaN(mealProteinG)) ? 0 : mealProteinG;
+
+  const thresholds = isMainMeal
+    ? { good: 30, borderline: 20 }
+    : { good: 15, borderline: 10 };
+
+  let rating, leucineLikelihood, hint;
+
+  if (g >= thresholds.good) {
+    rating = 'good';
+    leucineLikelihood = 'high';
+    hint = undefined;
+  } else if (g >= thresholds.borderline) {
+    rating = 'borderline';
+    leucineLikelihood = 'medium';
+    const missing = Math.round(thresholds.good - g);
+    hint = isMainMeal
+      ? `Proteinmenge grenzwertig — noch ~${missing} g fehlen für die Leucin-Schwelle (Schätzung aus Proteinmenge)`
+      : `Proteinmenge grenzwertig — noch ~${missing} g fehlen (Schätzung aus Proteinmenge)`;
+  } else {
+    rating = 'insufficient';
+    leucineLikelihood = 'low';
+    hint = isMainMeal
+      ? `Zu wenig Protein für MPS-Auslösung — mind. ${thresholds.good} g anstreben (Schätzung aus Proteinmenge)`
+      : `Zu wenig Protein — mind. ${thresholds.good} g für einen wirksamen Snack (Schätzung aus Proteinmenge)`;
+  }
+
+  return { proteinG: mealProteinG, leucineLikelihood, rating, hint };
+}
+
+/**
+ * Klassifiziert einen Mahlzeit-Slot als Haupt- oder Snack-Mahlzeit.
+ *
+ * Hauptmahlzeiten (true):  alle Slots, deren Name weder 'snack' noch 'casein' enthält.
+ * Snack-Mahlzeiten (false): 'Nachmittagssnack', 'Snack', 'Casein' u.ä.
+ * Unbekannte Slots:         true (konservativ — strengere Leucin-Schwelle,
+ *                           lieber eine unnötige Warnung als eine fehlende).
+ *
+ * Substring-Matching (toLowerCase) statt exakter Set-Prüfung, damit
+ * zukünftige Slots wie 'Morgensnack' automatisch korrekt klassifiziert werden.
+ *
+ * @param {string} slotName
+ * @returns {boolean}
+ */
+export function isMainMealSlot(slotName) {
+  const name = (slotName || '').toLowerCase();
+  return !name.includes('snack') && !name.includes('casein');
 }
 
 /**

@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
 **Zuletzt aktualisiert:** 2026-06-01  
-**Stand:** Phase 2 abgeschlossen · Phase 3 als nächstes  
+**Stand:** Phase 3A + 3B + 3D abgeschlossen · Phase 3C als nächstes  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `master` · Letzter Commit: `eca4188`  
-**APP_VERSION:** `1.1.0` · **SCHEMA_VERSION:** `1`
+**Branch:** `phase-3-tracker` (PR offen → master)  
+**APP_VERSION:** `1.2.2` · **SCHEMA_VERSION:** `2`
 
 ---
 
@@ -12,47 +12,48 @@
 
 | Phase | Status | Inhalt |
 |---|---|---|
-| **Phase 1 — Fundament** | ✅ Abgeschlossen | Multi-File-Architektur, Profil, localStorage/IndexedDB, Export/Import, Heute-Tab |
-| **Phase 2 — PWA + Nav** | ✅ Abgeschlossen | Service Worker, Manifest, Icons, Bottom-Navigation, UpdateBanner |
-| **Phase 3 — Tracker** | ⏳ Als nächstes | Lebensmittel-Suche (Open Food Facts), Barcode, eigene Foods, Tagesbuch-Einträge |
-| **Phase 4 — Rezepte** | ⏳ Ausstehend | Vollständige Rezeptdatenbank mit Schritten, eigene Rezepte |
-| **Phase 5 — Vorschläge** | ⏳ Ausstehend | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
-| **Phase 6 — AI** | ⏳ Ausstehend | Claude Vision, Foto-Rezepterkennung (nur mit API-Key) |
+| **Phase 1 — Fundament** | ✅ | Multi-File-Architektur, Profil, localStorage/IndexedDB, Export/Import, Heute-Tab |
+| **Phase 2 — PWA + Nav** | ✅ | Service Worker, Manifest, Icons, Bottom-Navigation, UpdateBanner |
+| **Vitest + Tests** | ✅ | 93 Unit-Tests für calc/-Schicht (bmr, macros, nutritionLogic, hydration, tracker) |
+| **HydrationReminder** | ✅ | `generateHydrationReminders()` in `js/calc/hydration.js` — kein UI noch |
+| **Phase 3A — Tracker-Fundament** | ✅ | Manuelle Eingabe, Favoriten, Tagesliste, Schema v2 |
+| **Phase 3B — Tagesbilanz** | ✅ | Ist-Werte aus Log summieren, DaySummary gefüllt, Protein je Slot in MealPlanEntry |
+| **Phase 3C — MPS-Vorbereitung** | ⏳ | TrackedFood-Felder für Leucin/Proteinqualität |
+| **Phase 3D — Hydration-Karte** | ✅ | HydrationCard im Heute-Tab — zeitbasiert abgeblendet/hervorgehoben |
+| **Phase 3E — OFD + Barcode** | ⏳ | Open Food Facts, Barcode-Scanner |
+| **Phase 4 — Rezepte** | ⏳ | Rezeptdatenbank mit Schritten, eigene Rezepte |
+| **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
+| **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung |
 
 ### Was die App aktuell kann
 
-- ✅ Installierbar als PWA (Manifest + Service Worker + Icons)
-- ✅ **Offline-fähig** (Service Worker cached alle lokalen Assets + CDN)
-- ✅ Bottom-Navigation (5 Tabs mit Emoji-Icons, goldene Akzentlinie für aktiven Tab)
-- ✅ Update-Benachrichtigung ("App-Update verfügbar — Jetzt laden")
-- ✅ Mahlzeitenplan (Trainingstag/Ruhetag) mit dynamischer Trainingszeit
-- ✅ Drei Trainingsszenarien (Früh-/Mittel-/Spättraining, automatisch erkannt)
-- ✅ Profil editierbar: Gewicht, Körperfett, Alter, Defizit, Proteinfaktor
-- ✅ BMR/TDEE (Katch-McArdle), drei Protein-Berechnungsmodi
-- ✅ Defizit-Warnung (safe/moderate/aggressive/dangerous)
+- ✅ Installierbar als PWA, offline-fähig
+- ✅ Bottom-Navigation (5 Tabs)
+- ✅ Mahlzeitenplan (Trainings-/Ruhetag, dynamische Trainingszeit)
+- ✅ Profil editierbar (Katch-McArdle, drei Protein-Modi, Defizit-Warnung)
+- ✅ **Tracker-Tab:** Mahlzeiten manuell eintragen, Favoriten anlegen, Tagesliste, Bearbeiten/Löschen
+- ✅ **Hydration-Karte:** Trink-Erinnerungen im Heute-Tab (zeitbasiert: vergangen = abgeblendet, nächste = hervorgehoben)
+- ✅ **Tagesbilanz:** KcalRing + MacroBars mit echten Ist-Werten; Protein je Mahlzeit-Slot mit Farbkodierung
 - ✅ Export/Import JSON, Backup-Erinnerung
-- ✅ 8 Initial-Rezepte, Wochenübersicht (Grundgerüst), Postmenopausale Hinweise
-- ❌ Lebensmittel tracken (Phase 3)
-- ❌ Barcode-Scanner (Phase 3)
+- ✅ 8 Initial-Rezepte, Wochenübersicht (Grundgerüst)
+- ❌ Tagesbilanz (Ist vs. Plan) → Phase 3B
+- ❌ Lebensmittelsuche / Barcode → Phase 3E
 
 ---
 
 ## 2. Architektur-Kurzreferenz
 
 ```
-ernaehrung.html          ← PWA-Shell (manifest, apple-touch-icon, kein Build)
-  └── js/app.js          ← React-Root, migrations, SW-Registration, UpdateBanner
-       ├── js/lib.js     ← React 18 + htm + idb (alle von esm.sh/jsdelivr)
-       ├── js/calc/      ← reine Berechnungsfunktionen (pure functions)
-       ├── js/storage/   ← localStorage (Profil/Settings) + IndexedDB (log/week)
-       ├── js/hooks/     ← React-Adapter für Storage
-       ├── js/pwa/       ← registerServiceWorker.js (Phase 2)
-       ├── js/ui/        ← Theme + UI-Komponenten + UpdateBanner
+ernaehrung.html          ← PWA-Shell
+  └── js/app.js          ← React-Root, migrations, SW, UpdateBanner
+       ├── js/lib.js     ← React 18 + htm + idb (esm.sh/jsdelivr)
+       ├── js/calc/      ← bmr, macros, nutritionLogic, hydration, tracker
+       ├── js/storage/   ← localStorage (Profil/Settings) + IndexedDB (log/week/foodsCustom/meals)
+       ├── js/hooks/     ← useProfile, useSettings, useUiState, useLog, useFavoriteFoods
+       ├── js/pwa/       ← registerServiceWorker
+       ├── js/ui/        ← Theme, Navigation, Modal, UpdateBanner, ...
        ├── js/data/      ← mealTemplates, tips
-       └── js/tabs/      ← heute, tracker, rezepte, woche, profil
-service-worker.js        ← Cache-Logik (Projekt-Root, kein /js Unterordner)
-manifest.json            ← PWA-Manifest
-icons/                   ← 192, 512, maskable PNGs
+       └── js/tabs/      ← heute, tracker (vollständig), rezepte, woche, profil
 ```
 
 ### CDN-Abhängigkeiten (fest versioniert in js/lib.js)
@@ -66,147 +67,146 @@ import { openDB }   from 'https://cdn.jsdelivr.net/npm/idb@8/+esm';
 ### Wichtige Konventionen
 - **htm statt JSX:** `` html`<div>...</div>` `` — kein Babel, kein Build
 - **Keine default exports:** immer `export function`, `export const`
-- **Styles inline:** über `S.xyz` aus `js/ui/theme.js`
-- **API-Key:** niemals automatisch exportieren (fixe Regel)
-- **Makro-Proportionen:** kP/pP/cP/fP müssen pro Szenario zu 1,00 summieren
+- **API-Key:** niemals automatisch exportieren
+- **Makro-Proportionen:** kP/pP/cP/fP müssen zu 1,00 summieren
+- **calc/-Funktionen:** immer pure (kein DOM, kein State) → testbar mit Vitest
 
 ---
 
-## 3. Versionierungs-Regel (bindend)
+## 3. Versionierungsregel (bindend)
 
-Bei **jeder** Änderung an JS-Dateien oder neuem Feature:
+`APP_VERSION` und `SCHEMA_VERSION` sind **unabhängig**:
+- `APP_VERSION` (semver): steuert den Service-Worker-Cache-Namen
+- `SCHEMA_VERSION` (Integer): steuert die IndexedDB-Version
+
+Bei jeder Änderung an JS-Dateien:
 1. `APP_VERSION` in `js/version.js` hochzählen
-2. `APP_VERSION` in `service-worker.js` **synchron** anpassen (beide Dateien!)
+2. `APP_VERSION` in `service-worker.js` **synchron** anpassen
 3. Neue Dateien in `LOCAL_ASSETS`-Array in `service-worker.js` eintragen
 
-Wenn diese Regel verletzt wird, laden Nutzer veraltete gecachte Versionen.
+Bei neuen IndexedDB-Stores:
+4. `SCHEMA_VERSION` in `js/version.js` erhöhen
+5. Migration in `js/storage/migrations.js` implementieren
 
 ---
 
 ## 4. Storage-Aufteilung
 
-| Was | Wo | Schlüssel / Store |
+| Was | Wo | Store / Schlüssel |
 |---|---|---|
 | Profil | localStorage | `ernaehrung_profile` |
 | Settings | localStorage | `ernaehrung_settings` |
 | UI-Zustand | localStorage | `ernaehrung_ui_state` |
 | Schema-Version | localStorage | `ernaehrung_schema_version` |
-| Esstagebuch | IndexedDB | Store `log` |
-| Wochenprotokoll | IndexedDB | Store `week` |
-| (Phase 3) Eigene Lebensmittel | IndexedDB | Store `foodsCustom` |
-| (Phase 3) Favoriten-Mahlzeiten | IndexedDB | Store `meals` |
+| Esstagebuch | IndexedDB | `log` (keyPath: date) |
+| Wochenprotokoll | IndexedDB | `week` (keyPath: weekKey) |
+| **Favoriten-Lebensmittel** | **IndexedDB** | **`foodsCustom`** (Phase 3A, neu) |
+| **Favoriten-Mahlzeiten** | **IndexedDB** | **`meals`** (Phase 3A, angelegt, noch leer) |
+| (Phase 4) Eigene Rezepte | IndexedDB | `recipesCustom` |
+| (Phase 5) Kühlschrank | IndexedDB | `fridge` |
+| (Phase 6) API-Cache | IndexedDB | `apiCache` |
 
 ### Schema-Versionsplan
 
-| Version | Phase | Neue Stores |
+| Version | Phase | Stores |
 |---|---|---|
-| **1** (aktuell) | Phase 1 | `log`, `week` |
-| 2 | Phase 3 | `foodsCustom`, `meals` |
-| 3 | Phase 4 | `recipesCustom`, `recipePhotos` |
-| 4 | Phase 5 | `fridge` |
-| 5 | Phase 6 | `apiCache` |
+| **1** | Phase 1 | `log`, `week` |
+| **2** (aktuell) | Phase 3A | + `foodsCustom`, `meals` |
+| 3 | Phase 4 | + `recipesCustom`, `recipePhotos` |
+| 4 | Phase 5 | + `fridge` |
+| 5 | Phase 6 | + `apiCache` |
 
 ---
 
-## 5. Ernährungskonzept — Aktuelle Werte
+## 5. Ernährungskonzept — aktuelle Werte
 
-### Berechnungsmethode
 - **BMR:** Katch-McArdle (`370 + 21.6 × LBM`)
-- **TDEE:** `BMR × Aktivitätsfaktor`
-- **Protein-Standard:** `perKgLeanMass` mit 2,0 g/kg (seit Session 2026-06-01)
-- **Defizit-Schwellen:** safe ≤17%, moderate ≤22%, aggressive ≤30%, dangerous >30%
-
-### Mahlzeiten-Timing (Trainingstag)
-- **Pre-Workout:** T − 1h15min
-- **Post-Workout:** T + 1h30min (Training ~1h + Heimfahrt + Zubereitung)
-- **Drei Szenarien:** Frühtraining (Pre < 10:30), Mitteltraining (Pre 10:30–13:00), Spättraining (Pre ≥ 13:00)
-
-### Postmenopausale Besonderheiten (in mealTemplates.js)
-- Frühstück = größte Mahlzeit (Kalorienfrontloading → Insulinsensitivität ↑)
-- Pre-Workout KH: 28% (nicht 40%) — Frauen verbrennen mehr Fett beim Training
-- Casein-Hinweis: 30–40g ~30min vor dem Schlafen
-- Leucin-Hinweis: ~3g pro Mahlzeit für MPS-Trigger
+- **Protein-Standard:** `perKgLeanMass`, 2,0 g/kg (seit 2026-06-01)
+- **Pre-Workout:** T − 1h15 · **Post-Workout:** T + 1h30
+- **Frühstück = größte Mahlzeit** (Kalorienfrontloading, postmenopausal)
+- **Pre-Workout KH:** 28 % (Frauen verbrennen mehr Fett)
+- **Casein-Hinweis:** 30–40g ~30min vor dem Schlafen
+- **Leucin-Hinweis:** ~3g pro Mahlzeit (MPS-Trigger)
 
 ---
 
-## 6. Architekturentscheidungen (bindend für alle Phasen)
+## 6. Architekturentscheidungen (bindend)
 
-### 6.1 Protein-Standard: LBM
-Default `proteinTargetMode = 'perKgLeanMass'`, `proteinPerKg = 2.0`. Begründung: bei hohem KFA (>40%) liefert Körpergewicht-Berechnung unrealistisch hohe Proteinziele.
+| Entscheidung | Inhalt |
+|---|---|
+| Protein-Standard | `perKgLeanMass` / 2,0 g/kg |
+| Flexible Mahlzeitenanzahl | Bereits generisch (3/4/5 ohne Refactoring) |
+| Leucin-Felder | Optional in `TrackedFood` ab Phase 3C (`leucineEstimateG?`, `proteinQualityScore?`, `mpsTriggered?`) |
+| Produktleitfragen | Beide müssen Ja sein: Muskelerhalt/Fettabbau UND MPS im Alltag |
+| Plan vs. Log | `MealWithMacros` und `TrackedFood` bleiben getrennt |
+| TrackedFood-Makros | kcal ganzzahlig, p/c/f 1 Dezimalstelle (`calcTrackedFoodMacros`) |
 
-### 6.2 Flexible Mahlzeitenanzahl
-Die Berechnungslogik (`distributeMacrosPerMeal`) ist generisch. 3/4/5 Mahlzeiten = neues Template-Array mit korrekten Summen. Keine Konfigurationsoption nötig (YAGNI).
+---
 
-### 6.3 Leucin-Felder in TrackedFood (ab Phase 3)
-```typescript
-interface TrackedFood {
-  // ... bestehende Felder ...
-  leucineEstimateG?: number;      // ~8-9% von p (tierisch), ~6% (pflanzlich)
-  proteinQualityScore?: number;   // 0–100
-  mpsTriggered?: boolean;         // true wenn leucineEstimateG >= 2.5g
-}
+## 7. Tests
+
 ```
-Optional → keine Migration. Keine exakten Werte möglich (Open Food Facts hat keine AS-Daten).
+tests/unit/calc/bmr.test.js           10 Tests
+tests/unit/calc/macros.test.js        23 Tests
+tests/unit/calc/nutritionLogic.test.js 30 Tests
+tests/unit/calc/hydration.test.js     24 Tests
+tests/unit/calc/tracker.test.js        6 Tests
+─────────────────────────────────────────────
+Gesamt                                93 Tests — alle grün
+```
 
-### 6.4 Produktleitfragen (§1.8 Spec — beide müssen Ja sein)
-1. „Hilft diese Funktion einer postmenopausalen Frau, Fett zu verlieren und Muskeln zu erhalten/aufzubauen?"
-2. „Hilft diese Funktion, die Muskelproteinsynthese (MPS) im Alltag besser zu erreichen?"
-
-### 6.5 Kein Super-Interface für Mahlzeiten
-`MealWithMacros` (Plan-Daten) und `TrackedFood` (Log-Daten) bleiben getrennt. Unterschiedliche Lebenszyklen.
+Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-## 7. Offene Punkte & Technische Schulden
+## 8. Offene Punkte vor Phase 3B
 
-### Vor Phase 3 — Pflicht
-- [ ] **Vitest für `calc/`-Schicht einrichten** (TS-01) — pure functions, ideal für Unit-Tests
-- [ ] **Phase-2-Smoke-Tests durchführen** — `tests/manual-checklist-phase-2.md`
+- [ ] **Favoriten bearbeiten/löschen** fehlt noch im UI (nur Anlegen möglich)
+- [ ] **Toast nach Eintrag** fehlt (keine Bestätigung sichtbar)
+- [ ] Vitest für IndexedDB-Hooks (TS-01 — `fake-indexeddb` einrichten, vor Phase 3B)
 
-### Bekannte technische Schulden
+## Technische Schulden
+
 | ID | Beschreibung | Wann |
 |---|---|---|
-| TS-01 | Keine Unit-Tests für `calc/` | Vor Phase 3 |
-| TS-05 | IndexedDB-Doppelöffnung (migrations + indexeddb) | Phase 3 |
-| TS-06 | Toast außerhalb Provider schlägt lautlos fehl | Phase 3 |
-| TS-07 | Google Fonts nicht offline-fähig (System-Font-Fallback) | Phase 3+ optional |
-
-### Bekannte fachliche Einschränkungen
-- Pre-Workout T−75min ist untere Grenze laut Studien (1–4h empfohlen) — bewusster Alltagskompromiss
-- Leucin-Berechnung ist immer Schätzwert (keine exakten AS-Daten verfügbar)
+| TS-01 | Keine Tests für IndexedDB-Hooks (fake-indexeddb nötig) | Vor Phase 3B |
+| TS-05 | IndexedDB-Doppelöffnung (migrations.js + indexeddb.js) | Phase 3B |
+| TS-06 | Toast außerhalb Provider schlägt lautlos fehl | Phase 3B |
+| TS-07 | Google Fonts nicht offline-fähig | Phase 3+ optional |
+| TS-08 | `new Date().toISOString()` nutzt UTC → kurz nach Mitternacht falsches Datum | Gemeinsamer Fix HeuteTab + Tracker |
 
 ---
 
-## 8. Nächste Schritte (Phase 3)
+## 9. Nächste Schritte
 
-**Phase 3 — Tracker** bringt:
-- Open Food Facts API (Lebensmittel-Suche)
-- Barcode-Scanner (html5-qrcode)
-- Eigene Lebensmittel anlegen (`foodsCustom`-Store, Schema-Version → 2)
-- Favoriten-Mahlzeiten (`meals`-Store)
-- Tagesbuch-Einträge (TrackerTab wird funktionsfähig)
-- Protein-Rating pro Mahlzeit (`rateMealProtein` in nutritionLogic.js — jetzt noch Stub)
-- TrackedFood mit optionalen Leucin-Feldern anlegen
+**Empfohlene Reihenfolge:**
 
-**Schema-Bump auf Version 2** nötig (neue Stores foodsCustom + meals).
+1. ~~**Phase 3D**~~ ✅ erledigt
+2. ~~**Phase 3B**~~ ✅ erledigt
+3. **Phase 3C**: MPS-Datenstruktur in TrackedFood anlegen
+3. **Phase 3C**: MPS-Datenstruktur in TrackedFood anlegen
+4. **Phase 3E**: Open Food Facts + Barcode-Scanner
+
+**Branch-Workflow ab jetzt:**
+- Jede Phase auf eigenem Feature-Branch
+- PR nach master nach Abschluss
+- Aktuell offen: `phase-3-tracker` → master
 
 ---
 
-## 9. Dokumentenverzeichnis
+## 10. Dokumentenverzeichnis
 
 | Datei | Inhalt |
 |---|---|
-| `docs/projekt-spezifikation.md` | Vollständige Spezifikation (alle Phasen, Datenmodell, API) |
-| `docs/implementierungsplan-phase-1.md` | Detaillierter Phase-1-Plan |
+| `docs/projekt-spezifikation.md` | Vollständige Spezifikation |
 | `docs/phase-1-abschlussbericht.md` | Phase-1-Abschlussbericht |
-| `docs/superpowers/plans/2026-06-01-phase-2-pwa-bottomnav.md` | Phase-2-Implementierungsplan |
 | `docs/phase-2-abschlussbericht.md` | Phase-2-Abschlussbericht |
-| `docs/uebergabedokument-aktuell.md` | **Dieses Dokument** — immer aktueller Stand |
-| `docs/uebergabedokument-session-2026-06-01.md` | Session-Übergabe vom 2026-06-01 |
-| `Ernaehrungskonzept_fuer_Coach.md` | Ernährungskonzept für Ernährungscoach |
-| `tests/manual-checklist-phase-1.md` | Phase-1-Smoke-Tests |
-| `tests/manual-checklist-phase-2.md` | Phase-2-Smoke-Tests (⏳ ausstehend) |
+| `docs/phase-3a-abschlussbericht.md` | Phase-3A-Abschlussbericht |
+| `docs/uebergabedokument-aktuell.md` | **Dieses Dokument** |
+| `docs/superpowers/plans/` | Alle Implementierungspläne |
+| `Ernaehrungskonzept_fuer_Coach.md` | Ernährungskonzept für Coach-Gespräch |
+| `tests/manual-checklist-phase-2.md` | Phase-2-Smoke-Tests |
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-01 · APP_VERSION 1.1.0 · Commit eca4188*
+*Zuletzt aktualisiert: 2026-06-01 · APP_VERSION 1.2.2 · SCHEMA_VERSION 2 · Commit c20b509*
