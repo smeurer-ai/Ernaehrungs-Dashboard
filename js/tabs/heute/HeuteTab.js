@@ -2,6 +2,7 @@ import { html } from '../../lib.js';
 import { DayTypeSwitch } from './DayTypeSwitch.js';
 import { DaySummary } from './DaySummary.js';
 import { MealPlanList } from './MealPlanList.js';
+import { HydrationCard } from './HydrationCard.js';
 import { useUiState } from '../../hooks/useUiState.js';
 import { S, COLORS } from '../../ui/theme.js';
 
@@ -30,6 +31,7 @@ export function HeuteTab({ profile, calculated }) {
       <${DaySummary} macros=${macros} />
       <div style=${S.cardTitle}>Mahlzeitenplan</div>
       <${MealPlanList} dayType=${dayType} trainingTime=${trainingTime} macros=${macros} />
+      <${HydrationCard} dayType=${dayType} trainingTime=${trainingTime} />
     </div>
   `;
 }

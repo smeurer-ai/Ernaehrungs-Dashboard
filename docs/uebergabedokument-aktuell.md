@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
 **Zuletzt aktualisiert:** 2026-06-01  
-**Stand:** Phase 3A abgeschlossen · Phase 3B als nächstes  
+**Stand:** Phase 3A + 3D abgeschlossen · Phase 3B als nächstes  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
 **Branch:** `phase-3-tracker` (PR offen → master)  
-**APP_VERSION:** `1.2.0` · **SCHEMA_VERSION:** `2`
+**APP_VERSION:** `1.2.1` · **SCHEMA_VERSION:** `2`
 
 ---
 
@@ -19,7 +19,7 @@
 | **Phase 3A — Tracker-Fundament** | ✅ | Manuelle Eingabe, Favoriten, Tagesliste, Schema v2 |
 | **Phase 3B — Tagesbilanz** | ⏳ | Ist-Werte summieren, Plan-Vergleich, Proteinverteilung |
 | **Phase 3C — MPS-Vorbereitung** | ⏳ | TrackedFood-Felder für Leucin/Proteinqualität |
-| **Phase 3D — Hydration-Karte** | ⏳ | generateHydrationReminders() im Heute-Tab anzeigen |
+| **Phase 3D — Hydration-Karte** | ✅ | HydrationCard im Heute-Tab — zeitbasiert abgeblendet/hervorgehoben |
 | **Phase 3E — OFD + Barcode** | ⏳ | Open Food Facts, Barcode-Scanner |
 | **Phase 4 — Rezepte** | ⏳ | Rezeptdatenbank mit Schritten, eigene Rezepte |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
@@ -32,6 +32,7 @@
 - ✅ Mahlzeitenplan (Trainings-/Ruhetag, dynamische Trainingszeit)
 - ✅ Profil editierbar (Katch-McArdle, drei Protein-Modi, Defizit-Warnung)
 - ✅ **Tracker-Tab:** Mahlzeiten manuell eintragen, Favoriten anlegen, Tagesliste, Bearbeiten/Löschen
+- ✅ **Hydration-Karte:** Trink-Erinnerungen im Heute-Tab (zeitbasiert: vergangen = abgeblendet, nächste = hervorgehoben)
 - ✅ Export/Import JSON, Backup-Erinnerung
 - ✅ 8 Initial-Rezepte, Wochenübersicht (Grundgerüst)
 - ❌ Tagesbilanz (Ist vs. Plan) → Phase 3B
@@ -178,7 +179,7 @@ Ausführen: `npm test` im Projekt-Root.
 
 **Empfohlene Reihenfolge:**
 
-1. **Phase 3D** (klein, schnell): Hydration-Karte im Heute-Tab — `generateHydrationReminders()` rendern
+1. ~~**Phase 3D**~~ ✅ erledigt
 2. **Phase 3B** (Kern): Tagesbilanz — Ist-Werte aus `log` summieren, gegen Plan vergleichen
 3. **Phase 3C**: MPS-Datenstruktur in TrackedFood anlegen
 4. **Phase 3E**: Open Food Facts + Barcode-Scanner
@@ -205,4 +206,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-01 · APP_VERSION 1.2.0 · SCHEMA_VERSION 2 · Commit 3bfe0b5*
+*Zuletzt aktualisiert: 2026-06-01 · APP_VERSION 1.2.1 · SCHEMA_VERSION 2 · Phase 3D abgeschlossen*
