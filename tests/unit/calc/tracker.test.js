@@ -82,3 +82,47 @@ describe('sumConsumed', () => {
     expect(sumConsumed([{}])).toEqual({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
   });
 });
+
+describe('groupProteinBySlot', () => {
+  it('gibt leeres Objekt bei leerer Liste zurück', () => {
+    expect(groupProteinBySlot([])).toEqual({});
+  });
+
+  it('summiert Protein korrekt nach Slot', () => {
+    const entries = [
+      { mealSlot: 'Frühstück',   p: 24 },
+      { mealSlot: 'Frühstück',   p: 10 },
+      { mealSlot: 'Mittagessen', p: 30 },
+    ];
+    expect(groupProteinBySlot(entries)).toEqual({
+      'Frühstück':   34,
+      'Mittagessen': 30,
+    });
+  });
+
+  it('ordnet Einträge ohne mealSlot unter "Sonstiges" ein', () => {
+    const entries = [
+      { p: 15 },
+      { mealSlot: undefined, p: 10 },
+    ];
+    expect(groupProteinBySlot(entries)).toEqual({ 'Sonstiges': 25 });
+  });
+
+  it('behandelt fehlende p-Felder ohne Absturz', () => {
+    expect(groupProteinBySlot([{ mealSlot: 'Frühstück' }])).toEqual({ 'Frühstück': 0 });
+  });
+
+  it('mehrere Slots in einem Durchlauf', () => {
+    const entries = [
+      { mealSlot: 'Pre-Workout', p: 20 },
+      { mealSlot: 'Pre-Workout', p: 5  },
+      { mealSlot: 'Abendessen',  p: 35 },
+      { p: 8 },
+    ];
+    expect(groupProteinBySlot(entries)).toEqual({
+      'Pre-Workout': 25,
+      'Abendessen':  35,
+      'Sonstiges':   8,
+    });
+  });
+});
