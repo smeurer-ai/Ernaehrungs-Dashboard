@@ -20,6 +20,38 @@
  * calcTrackedFoodMacros({ kcal100: 72, p100: 12, c100: 4, f100: 0.2 }, 200)
  * // → { kcal: 144, p: 24, c: 8, f: 0.4 }
  */
+/**
+ * Aggregiert TrackedFood-Einträge zu Tages-Istwerten.
+ * Übersetzt p/c/f → protein/carbs/fat für DaySummary-Kompatibilität.
+ * Liefert rohe Summen ohne Rundung.
+ *
+ * @param {Array<{kcal?: number, p?: number, c?: number, f?: number}>} entries
+ * @returns {{ kcal: number, protein: number, carbs: number, fat: number }}
+ */
+export function sumConsumed(entries) {
+  return entries.reduce((acc, e) => ({
+    kcal:    acc.kcal    + (e.kcal ?? 0),
+    protein: acc.protein + (e.p    ?? 0),
+    carbs:   acc.carbs   + (e.c    ?? 0),
+    fat:     acc.fat     + (e.f    ?? 0),
+  }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
+}
+
+/**
+ * Gibt Protein-Summe je Mahlzeit-Slot zurück.
+ * Lookup-Key entspricht meal.label in MealPlanEntry (z.B. "Frühstück").
+ * Einträge ohne mealSlot landen unter "Sonstiges".
+ *
+ * @param {Array<{mealSlot?: string, p?: number}>} entries
+ * @returns {Record<string, number>}
+ */
+export function groupProteinBySlot(entries) {
+  return entries.reduce((acc, e) => {
+    const slot = e.mealSlot || 'Sonstiges';
+    return { ...acc, [slot]: (acc[slot] ?? 0) + (e.p ?? 0) };
+  }, {});
+}
+
 export function calcTrackedFoodMacros(food, gramm) {
   const factor = gramm / 100;
   return {

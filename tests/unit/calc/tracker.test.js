@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcTrackedFoodMacros } from '../../../js/calc/tracker.js';
+import { calcTrackedFoodMacros, sumConsumed, groupProteinBySlot } from '../../../js/calc/tracker.js';
 
 // Referenz-Lebensmittel für Tests
 const QUARK        = { kcal100: 72,  p100: 12,  c100: 4,  f100: 0.2 };
@@ -54,5 +54,31 @@ describe('calcTrackedFoodMacros', () => {
     expect(toDecimals(result.p)).toBeLessThanOrEqual(1);
     expect(toDecimals(result.c)).toBeLessThanOrEqual(1);
     expect(toDecimals(result.f)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('sumConsumed', () => {
+  it('gibt Nullen zurück bei leerer Liste', () => {
+    expect(sumConsumed([])).toEqual({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
+  });
+
+  it('summiert kcal, p→protein, c→carbs, f→fat korrekt', () => {
+    const entries = [
+      { kcal: 144, p: 24,   c: 8,    f: 0.4 },
+      { kcal: 296, p: 10.4, c: 47.2, f: 5.6 },
+    ];
+    expect(sumConsumed(entries)).toEqual({
+      kcal: 440, protein: 34.4, carbs: 55.2, fat: 6.0,
+    });
+  });
+
+  it('behandelt fehlende Felder (p/c/f/kcal) ohne Absturz', () => {
+    expect(sumConsumed([{ kcal: 100 }])).toEqual({
+      kcal: 100, protein: 0, carbs: 0, fat: 0,
+    });
+  });
+
+  it('behandelt vollständig leere Objekte', () => {
+    expect(sumConsumed([{}])).toEqual({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
   });
 });
