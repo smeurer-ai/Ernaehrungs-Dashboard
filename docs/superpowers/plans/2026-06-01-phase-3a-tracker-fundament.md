@@ -19,17 +19,17 @@
 
 ### Wichtige Bestandscode-Fakten
 
-- `js/version.js`: `APP_VERSION` + `SCHEMA_VERSION` — beides muss synchron gebumpt werden
+- `js/version.js`: enthält **zwei unabhängige Werte**: `APP_VERSION` (semver-String für App-Cache) und `SCHEMA_VERSION` (Integer für IndexedDB). Sie müssen **nicht** denselben Wert haben — `APP_VERSION = '1.2.0'` und `SCHEMA_VERSION = 2` ist korrekt und gewollt.
+- `service-worker.js`: `APP_VERSION` muss mit `js/version.js APP_VERSION` identisch sein — das steuert den Cache-Namen. **Nicht** mit `SCHEMA_VERSION` verwechseln.
 - `js/storage/migrations.js`: `CURRENT_SCHEMA_VERSION = SCHEMA_VERSION` (kein eigener Wert!) — Migration-2-Eintrag ist nur Kommentar, muss implementiert werden
 - `js/storage/indexeddb.js`: hat `getLogForDate`, `saveLogEntry`, `getLogsBetween` — aber `LogEntry` hat noch **kein `entries`-Feld**
-- `service-worker.js`: `APP_VERSION` muss ebenfalls angepasst werden + neue Dateien in `LOCAL_ASSETS`
 - `js/app.js`: `TrackerTab` bekommt aktuell keine Props — muss in Task 6 geändert werden
 
 ### Muster befolgen
 
 - `js/calc/bmr.js` als Stil-Vorlage für neue calc-Dateien
 - `js/hooks/useProfile.js` als Stil-Vorlage für neue Hooks
-- Alle Styles über `S.xyz` aus `js/ui/theme.js` — kein Inline-CSS direkt
+- Gemeinsame/wiederverwendbare Styles in `theme.js`. Komponentenspezifische Layout-Styles dürfen lokal als Inline-Objekte bleiben (entspricht dem bestehenden Projekt-Muster)
 
 ---
 
@@ -431,14 +431,17 @@ export function useLog(date, dayMeta) {
     });
   }, [date]);
 
-  // Hilfsfunktion: aktuelle LogEntry-Struktur bauen
+  // Hilfsfunktion: aktuelle LogEntry-Struktur bauen.
+  // Reihenfolge: existing zuerst (preserviert createdAt etc.),
+  // dann explizite Felder überschreiben damit dayType/trainingTime
+  // nie vom alten existing-Wert verdeckt werden.
   async function buildAndSave(updatedEntries) {
     const existing = await getLogForDate(date);
     await saveLogEntry({
+      ...existing,
       date,
       dayType: dayMeta.dayType,
       trainingTime: dayMeta.trainingTime,
-      ...existing,
       entries: updatedEntries,
     });
     setEntries(updatedEntries);
@@ -782,7 +785,7 @@ export function FavoritePicker({ favorites, onSelect }) {
 Modal für manuelle Eingabe oder Favoriten-Auswahl.
 
 ```javascript
-import { html, useState, useMemo } from '../../lib.js';
+import { html, useState, useEffect, useMemo } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { Modal } from '../../ui/Modal.js';
 import { FavoritePicker } from './FavoritePicker.js';
@@ -795,7 +798,8 @@ function generateId() {
     : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-const MEAL_SLOTS = [
+// Fallback-Liste wenn keine mealSlots-Prop übergeben wird
+const DEFAULT_MEAL_SLOTS = [
   'Frühstück', 'Pre-Workout', 'Post-Workout',
   'Mittagessen', 'Nachmittagssnack', 'Abendessen', 'Snack',
 ];
@@ -809,24 +813,49 @@ const MEAL_SLOTS = [
  *   onSave: function,           // (trackedFood, saveFavorite?) => void
  *   favorites: FavoriteFood[],
  *   initialEntry?: TrackedFood, // wenn gesetzt: Edit-Modus
- *   defaultSlot?: string
+ *   defaultSlot?: string,
+ *   mealSlots?: string[],       // dynamische Slot-Namen aus TrackerTab
  * }} props
  */
-export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry, defaultSlot }) {
+export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry, defaultSlot, mealSlots }) {
   const isEdit = !!initialEntry;
+  const slots = mealSlots ?? DEFAULT_MEAL_SLOTS;
 
-  const [slot, setSlot] = useState(initialEntry?.mealSlot ?? defaultSlot ?? 'Frühstück');
-  const [name, setName] = useState(initialEntry?.foodName ?? '');
-  const [gramm, setGramm] = useState(String(initialEntry?.gramm ?? ''));
+  const [slot, setSlot] = useState(defaultSlot ?? slots[0] ?? 'Frühstück');
+  const [name, setName] = useState('');
+  const [gramm, setGramm] = useState('');
   const [kcal100, setKcal100] = useState('');
   const [p100, setP100] = useState('');
   const [c100, setC100] = useState('');
   const [f100, setF100] = useState('');
   const [saveFav, setSaveFav] = useState(false);
 
-  // Beim Öffnen im Edit-Modus: Per-100g-Werte zurückrechnen (Näherung)
-  // Beim Öffnen neu: Felder leeren (falls Modal wiederholt geöffnet wird)
-  // → Reset wenn open sich ändert und kein initialEntry
+  // Formular zurücksetzen / mit initialEntry befüllen wenn Modal geöffnet wird.
+  // Im Edit-Modus: Per-100g-Werte aus vorhandenem Eintrag zurückrechnen
+  // (factor = 100 / entry.gramm → entry.kcal * factor = kcal100).
+  useEffect(() => {
+    if (!open) return;
+    if (initialEntry) {
+      const f = initialEntry.gramm > 0 ? 100 / initialEntry.gramm : 0;
+      setSlot(initialEntry.mealSlot);
+      setName(initialEntry.foodName);
+      setGramm(String(initialEntry.gramm));
+      setKcal100(String(Math.round(initialEntry.kcal * f)));
+      setP100(String(Math.round(initialEntry.p * f * 10) / 10));
+      setC100(String(Math.round(initialEntry.c * f * 10) / 10));
+      setF100(String(Math.round(initialEntry.f * f * 10) / 10));
+    } else {
+      setSlot(defaultSlot ?? slots[0] ?? 'Frühstück');
+      setName('');
+      setGramm('');
+      setKcal100('');
+      setP100('');
+      setC100('');
+      setF100('');
+      setSaveFav(false);
+    }
+  }, [open, initialEntry]);
+
   const handleFavSelect = (fav) => {
     setName(fav.name);
     setKcal100(String(fav.kcal100));
@@ -885,7 +914,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
   if (!open) return null;
 
   return html`
-    <${Modal} onClose=${onClose}>
+    <${Modal} open=${open} onClose=${onClose}>
       <div style=${{ padding: '4px 0' }}>
         <!-- Titel -->
         <div style=${{ ...S.cardTitle, fontSize: '12px', marginBottom: '14px' }}>
@@ -1164,6 +1193,7 @@ export function TrackerTab({ dayType, trainingTime }) {
         favorites=${favorites}
         initialEntry=${editEntry}
         defaultSlot=${defaultSlot}
+        mealSlots=${mealSlots}
       />
     </div>
   `;
