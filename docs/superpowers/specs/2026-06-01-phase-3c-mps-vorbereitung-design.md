@@ -141,12 +141,14 @@ Das `~` signalisiert visuell "Schätzung" ohne Erklärungstext.
 
 **Datenfluss:**
 1. `groupProteinBySlot(entries)` liefert `{ [slot]: proteinG }` (existiert bereits in `calc/tracker.js`)
-2. Pro Slot: `isMainMealSlot(slot)` → `rateMealProtein(slotProteinG, isMain, profile)` → Badge-Variante
+2. Pro Slot: `isMainMealSlot(slot)` → `rateMealProtein(slotProteinG, isMain, {})` → Badge-Variante
+
+**`profile` in Phase 3C:** `DayLogList` bekommt kein Profil-Prop (aktuell: `entries`, `mealSlots`, `onDelete`, `onEdit`, `onAdd`). `rateMealProtein()` wird bewusst mit leerem Objekt `{}` aufgerufen — die festen Schwellen aus Abschnitt 1.2 gelten. Profil-Prop und individuelle Schwellen folgen in einer späteren Phase.
 
 ### Was unverändert bleibt
 
 - `FoodEntryModal` — keine neuen Felder
-- `TrackedFood`-Typedef — keine neuen Pflichtfelder. Die optionalen Felder `leucineEstimateG?`, `proteinQualityScore?`, `mpsTriggered?` sind im JSDoc dokumentiert, werden in Phase 3C nicht befüllt (→ Phase 3E wenn echte Leucin-Daten aus Open Food Facts verfügbar)
+- `TrackedFood`-Typedef — JSDoc wird um die optionalen Felder `leucineEstimateG?`, `proteinQualityScore?`, `mpsTriggered?` erweitert (Dokumentation der geplanten Struktur). Gespeicherte Einträge bleiben unverändert; keine automatische Befüllung in Phase 3C. Die Felder werden erst in Phase 3E genutzt, wenn bessere Leucin-Schätzungen aus Produkt-, Kategorie- und Proteinqualitätsdaten möglich sind.
 - `useLog`-Hook — unverändert
 - Heute-Tab / `DaySummary` — unverändert (Tagesübersicht folgt in Phase 3E)
 
@@ -154,7 +156,9 @@ Das `~` signalisiert visuell "Schätzung" ohne Erklärungstext.
 
 ## 3. Tests — `tests/unit/calc/nutritionLogic.test.js`
 
-13 neue Tests, ergänzt zu den bestehenden 30.
+Die 9 bestehenden `rateMealProtein()`-Stub-Tests in `nutritionLogic.test.js` werden **ersetzt** (nicht ergänzt), da sie gegen die neue Logik kollidieren. Neu: 5 `isMainMealSlot()`-Tests + 8 `rateMealProtein()`-Tests = 13 Tests gesamt für Phase 3C.
+
+**Gesamtrechnung:** 93 (bisher) − 9 (Stub-Tests entfallen) + 13 (neue Tests) = **97 Tests**
 
 ### `isMainMealSlot()` — 5 Tests
 
@@ -179,7 +183,7 @@ Das `~` signalisiert visuell "Schätzung" ohne Erklärungstext.
 | `null` übergeben | `insufficient`, kein Crash |
 | Genau 30 g (Hauptmahlzeit) | `good` (Grenzfall inklusiv) |
 
-**Gesamtzahl nach Phase 3C: 106 Tests**
+**Gesamtzahl nach Phase 3C: 97 Tests**
 
 ---
 
@@ -199,7 +203,7 @@ Das `~` signalisiert visuell "Schätzung" ohne Erklärungstext.
 | Feature | Phase |
 |---|---|
 | Tagesübersicht "X von Y Mahlzeiten MPS-wirksam" | Phase 3E |
-| Echte Leucin-Daten aus Open Food Facts | Phase 3E |
+| Bessere Leucin-Schätzung aus Produkt-/Kategorie-/Proteinqualitätsdaten (Open Food Facts liefert keine Leucin-Werte) | Phase 3E |
 | `leucineEstimateG`, `mpsTriggered` in TrackedFood befüllen | Phase 3E |
 | Individuelle Schwellen aus `profile` in `rateMealProtein()` | Phase 3E oder später |
 | Casein-Abend-Priorisierung | Phase 5 |
