@@ -1,7 +1,7 @@
 // service-worker.js
 // Version muss mit js/version.js synchron gehalten werden.
 // Bei jedem Phase-Release: APP_VERSION hochzählen.
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 const CACHE_STATIC = `ernaehrung-static-${APP_VERSION}`;
 const CACHE_CDN    = `ernaehrung-cdn-${APP_VERSION}`;
 
@@ -23,6 +23,7 @@ const LOCAL_ASSETS = [
   './js/calc/bmr.js',
   './js/calc/macros.js',
   './js/calc/nutritionLogic.js',
+  './js/calc/hydration.js',
   './js/data/mealTemplates.js',
   './js/data/tips.js',
   './js/hooks/useProfile.js',
