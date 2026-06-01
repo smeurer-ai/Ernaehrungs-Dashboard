@@ -3,6 +3,7 @@ import {
   assessDeficit,
   rateMealProtein,
   assessDayStructure,
+  isMainMealSlot,
 } from '../../../js/calc/nutritionLogic.js';
 
 // ── assessDeficit ─────────────────────────────────────────────────────────────
@@ -106,46 +107,102 @@ describe('assessDeficit', () => {
   });
 });
 
+// ── isMainMealSlot ────────────────────────────────────────────────────────────
+// Klassifiziert Slots als Haupt- oder Snack-Mahlzeit.
+// Unbekannte Slots → true (konservativ, strengere Schwelle).
+
+describe('isMainMealSlot', () => {
+  it('klassifiziert Frühstück als Hauptmahlzeit', () => {
+    expect(isMainMealSlot('Frühstück')).toBe(true);
+  });
+
+  it('klassifiziert Post-Workout als Hauptmahlzeit', () => {
+    expect(isMainMealSlot('Post-Workout')).toBe(true);
+  });
+
+  it('klassifiziert Nachmittagssnack als Snack-Mahlzeit (echter Produktions-Slot)', () => {
+    expect(isMainMealSlot('Nachmittagssnack')).toBe(false);
+  });
+
+  it('klassifiziert Casein als Snack-Mahlzeit', () => {
+    expect(isMainMealSlot('Casein')).toBe(false);
+  });
+
+  it('behandelt unbekannte Slots konservativ als Hauptmahlzeit', () => {
+    expect(isMainMealSlot('UnbekannterSlot')).toBe(true);
+  });
+});
+
 // ── rateMealProtein ───────────────────────────────────────────────────────────
-// Stub Phase 1: rating basiert nur auf Gramm-Schwellen
-// Phase 3 wird echte Leucin-Schätzung einbauen
+// Schwellen (aus Studiendaten, 3g Leucin ≈ 30g hochwertiges Protein):
+//   Hauptmahlzeit: ≥30g good, 20–29g borderline, <20g insufficient
+//   Snack:         ≥15g good, 10–14g borderline, <10g insufficient
+// hint ist undefined bei good, deutschsprachiger String mit "(Schätzung…)" sonst.
 
 describe('rateMealProtein', () => {
-  it('bewertet ≥ 25g Protein als good', () => {
-    expect(rateMealProtein(25, true, {}).rating).toBe('good');
+  it('bewertet Hauptmahlzeit mit 35g als good/high ohne hint', () => {
+    const r = rateMealProtein(35, true, {});
+    expect(r.rating).toBe('good');
+    expect(r.leucineLikelihood).toBe('high');
+    expect(r.hint).toBeUndefined();
   });
 
-  it('bewertet 35g Protein als good', () => {
-    expect(rateMealProtein(35, true, {}).rating).toBe('good');
+  it('bewertet Hauptmahlzeit mit genau 30g als good (Grenzfall inklusiv)', () => {
+    const r = rateMealProtein(30, true, {});
+    expect(r.rating).toBe('good');
   });
 
-  it('bewertet 24g Protein als borderline', () => {
-    expect(rateMealProtein(24, true, {}).rating).toBe('borderline');
+  it('bewertet Hauptmahlzeit mit 25g als borderline/medium mit hint', () => {
+    const r = rateMealProtein(25, true, {});
+    expect(r.rating).toBe('borderline');
+    expect(r.leucineLikelihood).toBe('medium');
+    expect(r.hint).toContain('Schätzung');
   });
 
-  it('bewertet 15g Protein als borderline', () => {
-    expect(rateMealProtein(15, false, {}).rating).toBe('borderline');
+  it('bewertet Hauptmahlzeit mit 12g als insufficient/low mit hint', () => {
+    const r = rateMealProtein(12, true, {});
+    expect(r.rating).toBe('insufficient');
+    expect(r.leucineLikelihood).toBe('low');
+    expect(r.hint).toContain('Schätzung');
   });
 
-  it('bewertet 14g Protein als insufficient', () => {
-    expect(rateMealProtein(14, false, {}).rating).toBe('insufficient');
+  it('bewertet Snack mit 18g als good/high ohne hint', () => {
+    const r = rateMealProtein(18, false, {});
+    expect(r.rating).toBe('good');
+    expect(r.leucineLikelihood).toBe('high');
+    expect(r.hint).toBeUndefined();
   });
 
-  it('bewertet 0g Protein als insufficient', () => {
-    expect(rateMealProtein(0, false, {}).rating).toBe('insufficient');
+  it('bewertet Snack mit 12g als borderline/medium mit hint', () => {
+    const r = rateMealProtein(12, false, {});
+    expect(r.rating).toBe('borderline');
+    expect(r.leucineLikelihood).toBe('medium');
+    expect(r.hint).toContain('Schätzung');
   });
 
-  it('gibt immer leucineLikelihood: "high" zurück (Stub)', () => {
-    expect(rateMealProtein(30, true, {}).leucineLikelihood).toBe('high');
-    expect(rateMealProtein(10, false, {}).leucineLikelihood).toBe('high');
+  it('bewertet Snack mit 5g als insufficient/low mit hint', () => {
+    const r = rateMealProtein(5, false, {});
+    expect(r.rating).toBe('insufficient');
+    expect(r.leucineLikelihood).toBe('low');
+    expect(r.hint).toContain('Schätzung');
   });
 
-  it('gibt immer hint: undefined zurück (Stub)', () => {
-    expect(rateMealProtein(30, true, {}).hint).toBeUndefined();
+  it('gibt insufficient zurück bei null ohne Crash', () => {
+    const r = rateMealProtein(null, true, {});
+    expect(r.rating).toBe('insufficient');
+    expect(r.leucineLikelihood).toBe('low');
   });
 
-  it('gibt proteinG gleich dem Input zurück', () => {
-    expect(rateMealProtein(42, true, {}).proteinG).toBe(42);
+  it('gibt insufficient zurück bei undefined ohne Crash', () => {
+    const r = rateMealProtein(undefined, true, {});
+    expect(r.rating).toBe('insufficient');
+    expect(r.leucineLikelihood).toBe('low');
+  });
+
+  it('gibt insufficient zurück bei NaN ohne Crash', () => {
+    const r = rateMealProtein(NaN, true, {});
+    expect(r.rating).toBe('insufficient');
+    expect(r.leucineLikelihood).toBe('low');
   });
 });
 
