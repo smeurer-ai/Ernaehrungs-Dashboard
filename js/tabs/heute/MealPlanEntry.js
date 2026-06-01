@@ -1,7 +1,15 @@
 import { html } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 
-export function MealPlanEntry({ meal }) {
+function proteinLineColor(consumed, planned) {
+  if (consumed === 0) return COLORS.textSubtle;
+  const ratio = consumed / planned;
+  if (ratio > 1.1)  return COLORS.gold;
+  if (ratio >= 0.9) return '#5cb85c';
+  return COLORS.textMuted;
+}
+
+export function MealPlanEntry({ meal, consumedProtein }) {
   return html`
     <div style=${S.mealCard}>
       <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
@@ -19,9 +27,9 @@ export function MealPlanEntry({ meal }) {
       </div>
       <div style=${{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
         ${[
-          { label: 'P', value: meal.protein, color: '#7eb8f7' },
-          { label: 'KH', value: meal.carbs, color: '#f7c47e' },
-          { label: 'F', value: meal.fat, color: '#f77eb8' },
+          { label: 'P',  value: meal.protein, color: '#7eb8f7' },
+          { label: 'KH', value: meal.carbs,   color: '#f7c47e' },
+          { label: 'F',  value: meal.fat,     color: '#f77eb8' },
         ].map(macro => html`
           <div key=${macro.label} style=${S.chip(macro.color)}>
             ${macro.label} ${macro.value}g
@@ -31,6 +39,21 @@ export function MealPlanEntry({ meal }) {
       ${meal.note && html`
         <div style=${{ fontSize: '10px', color: COLORS.textSubtle, fontFamily: FONTS.mono, borderTop: '1px solid #1e1e1e', paddingTop: '6px', marginTop: '4px' }}>
           ${meal.note}
+        </div>
+      `}
+      ${consumedProtein !== undefined && html`
+        <div style=${{
+          fontSize: '11px',
+          fontFamily: FONTS.mono,
+          marginTop: '6px',
+          borderTop: '1px solid #1e1e1e',
+          paddingTop: '6px',
+          color: proteinLineColor(consumedProtein, meal.protein),
+        }}>
+          ${consumedProtein === 0
+            ? 'Protein: Noch nicht erfasst'
+            : `Protein: ${Math.round(consumedProtein)} g / ${meal.protein} g`
+          }
         </div>
       `}
     </div>
