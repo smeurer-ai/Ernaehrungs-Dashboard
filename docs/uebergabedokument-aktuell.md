@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
-**Zuletzt aktualisiert:** 2026-06-01  
-**Stand:** Phase 3A + 3B + 3D abgeschlossen · Phase 3C als nächstes  
+**Zuletzt aktualisiert:** 2026-06-02  
+**Stand:** Phase 3A + 3B + 3C + 3D abgeschlossen · Phase 3E als nächstes  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
 **Branch:** `phase-3-tracker` (PR offen → master)  
-**APP_VERSION:** `1.2.2` · **SCHEMA_VERSION:** `2`
+**APP_VERSION:** `1.2.3` · **SCHEMA_VERSION:** `2`
 
 ---
 
@@ -14,11 +14,11 @@
 |---|---|---|
 | **Phase 1 — Fundament** | ✅ | Multi-File-Architektur, Profil, localStorage/IndexedDB, Export/Import, Heute-Tab |
 | **Phase 2 — PWA + Nav** | ✅ | Service Worker, Manifest, Icons, Bottom-Navigation, UpdateBanner |
-| **Vitest + Tests** | ✅ | 93 Unit-Tests für calc/-Schicht (bmr, macros, nutritionLogic, hydration, tracker) |
+| **Vitest + Tests** | ✅ | 108 Unit-Tests für calc/-Schicht (bmr, macros, nutritionLogic, hydration, tracker) |
 | **HydrationReminder** | ✅ | `generateHydrationReminders()` in `js/calc/hydration.js` — kein UI noch |
 | **Phase 3A — Tracker-Fundament** | ✅ | Manuelle Eingabe, Favoriten, Tagesliste, Schema v2 |
 | **Phase 3B — Tagesbilanz** | ✅ | Ist-Werte aus Log summieren, DaySummary gefüllt, Protein je Slot in MealPlanEntry |
-| **Phase 3C — MPS-Vorbereitung** | ⏳ | TrackedFood-Felder für Leucin/Proteinqualität |
+| **Phase 3C — MPS-Vorbereitung** | ✅ | `rateMealProtein()` echte Logik, `isMainMealSlot()`, Leucin-Badge im Tracker |
 | **Phase 3D — Hydration-Karte** | ✅ | HydrationCard im Heute-Tab — zeitbasiert abgeblendet/hervorgehoben |
 | **Phase 3E — OFD + Barcode** | ⏳ | Open Food Facts, Barcode-Scanner |
 | **Phase 4 — Rezepte** | ⏳ | Rezeptdatenbank mit Schritten, eigene Rezepte |
@@ -32,12 +32,13 @@
 - ✅ Mahlzeitenplan (Trainings-/Ruhetag, dynamische Trainingszeit)
 - ✅ Profil editierbar (Katch-McArdle, drei Protein-Modi, Defizit-Warnung)
 - ✅ **Tracker-Tab:** Mahlzeiten manuell eintragen, Favoriten anlegen, Tagesliste, Bearbeiten/Löschen
+- ✅ **MPS-Badge:** Pro Mahlzeit-Slot `~✓ / ~⚠ / ~✗ Leucin` mit ℹ️-Schätzungs-Hinweis (Phase 3C)
 - ✅ **Hydration-Karte:** Trink-Erinnerungen im Heute-Tab (zeitbasiert: vergangen = abgeblendet, nächste = hervorgehoben)
 - ✅ **Tagesbilanz:** KcalRing + MacroBars mit echten Ist-Werten; Protein je Mahlzeit-Slot mit Farbkodierung
 - ✅ Export/Import JSON, Backup-Erinnerung
 - ✅ 8 Initial-Rezepte, Wochenübersicht (Grundgerüst)
-- ❌ Tagesbilanz (Ist vs. Plan) → Phase 3B
 - ❌ Lebensmittelsuche / Barcode → Phase 3E
+- ❌ Tagesübersicht MPS-Wirksamkeit → Phase 3E
 
 ---
 
@@ -126,7 +127,7 @@ Bei neuen IndexedDB-Stores:
 - **Frühstück = größte Mahlzeit** (Kalorienfrontloading, postmenopausal)
 - **Pre-Workout KH:** 28 % (Frauen verbrennen mehr Fett)
 - **Casein-Hinweis:** 30–40g ~30min vor dem Schlafen
-- **Leucin-Hinweis:** ~3g pro Mahlzeit (MPS-Trigger)
+- **Leucin-Hinweis:** ~3g pro Mahlzeit (MPS-Trigger) — Schwelle aus Studiendaten bestätigt
 
 ---
 
@@ -136,7 +137,10 @@ Bei neuen IndexedDB-Stores:
 |---|---|
 | Protein-Standard | `perKgLeanMass` / 2,0 g/kg |
 | Flexible Mahlzeitenanzahl | Bereits generisch (3/4/5 ohne Refactoring) |
-| Leucin-Felder | Optional in `TrackedFood` ab Phase 3C (`leucineEstimateG?`, `proteinQualityScore?`, `mpsTriggered?`) |
+| Leucin-Schätzung | Dynamisch berechnet aus `p` + `isMainMealSlot()`, nie persistiert (Phase 3C) |
+| Leucin-Felder TrackedFood | `leucineEstimateG?`, `proteinQualityScore?`, `mpsTriggered?` — im JSDoc dokumentiert, erst Phase 3E befüllt |
+| `isMainMealSlot()` | Substring-Matching (`toLowerCase().includes()`), nicht exakte Set-Prüfung — robust für neue Slot-Namen |
+| `rateMealProtein()` Schwellen | Hauptmahlzeit: 30/20g · Snack: 15/10g · Basis: 3g Leucin ≈ 30g hochwertiges Protein |
 | Produktleitfragen | Beide müssen Ja sein: Muskelerhalt/Fettabbau UND MPS im Alltag |
 | Plan vs. Log | `MealWithMacros` und `TrackedFood` bleiben getrennt |
 | TrackedFood-Makros | kcal ganzzahlig, p/c/f 1 Dezimalstelle (`calcTrackedFoodMacros`) |
@@ -148,28 +152,22 @@ Bei neuen IndexedDB-Stores:
 ```
 tests/unit/calc/bmr.test.js           10 Tests
 tests/unit/calc/macros.test.js        23 Tests
-tests/unit/calc/nutritionLogic.test.js 30 Tests
+tests/unit/calc/nutritionLogic.test.js 36 Tests  (Phase 3C: +6 netto)
 tests/unit/calc/hydration.test.js     24 Tests
-tests/unit/calc/tracker.test.js        6 Tests
+tests/unit/calc/tracker.test.js       15 Tests
 ─────────────────────────────────────────────
-Gesamt                                93 Tests — alle grün
+Gesamt                               108 Tests — alle grün
 ```
 
 Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-## 8. Offene Punkte vor Phase 3B
-
-- [ ] **Favoriten bearbeiten/löschen** fehlt noch im UI (nur Anlegen möglich)
-- [ ] **Toast nach Eintrag** fehlt (keine Bestätigung sichtbar)
-- [ ] Vitest für IndexedDB-Hooks (TS-01 — `fake-indexeddb` einrichten, vor Phase 3B)
-
-## Technische Schulden
+## 8. Technische Schulden
 
 | ID | Beschreibung | Wann |
 |---|---|---|
-| TS-01 | Keine Tests für IndexedDB-Hooks (fake-indexeddb nötig) | Vor Phase 3B |
+| TS-01 | Keine Tests für IndexedDB-Hooks (fake-indexeddb nötig) | Vor Phase 3B (weiterhin offen) |
 | TS-05 | IndexedDB-Doppelöffnung (migrations.js + indexeddb.js) | Phase 3B |
 | TS-06 | Toast außerhalb Provider schlägt lautlos fehl | Phase 3B |
 | TS-07 | Google Fonts nicht offline-fähig | Phase 3+ optional |
@@ -183,9 +181,12 @@ Ausführen: `npm test` im Projekt-Root.
 
 1. ~~**Phase 3D**~~ ✅ erledigt
 2. ~~**Phase 3B**~~ ✅ erledigt
-3. **Phase 3C**: MPS-Datenstruktur in TrackedFood anlegen
-3. **Phase 3C**: MPS-Datenstruktur in TrackedFood anlegen
+3. ~~**Phase 3C**~~ ✅ erledigt
 4. **Phase 3E**: Open Food Facts + Barcode-Scanner
+   - Produktsuche nach Name oder Barcode-Scan
+   - Leucin-Schätzung aus Produktkategorie verfeinern (bessere Basis als nur Proteinmenge)
+   - `leucineEstimateG`, `mpsTriggered` in TrackedFood befüllen (SCHEMA_VERSION bleibt 2 — optionale Felder)
+   - Tagesübersicht „X von Y Mahlzeiten MPS-wirksam" im Heute-Tab
 
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
@@ -202,11 +203,13 @@ Ausführen: `npm test` im Projekt-Root.
 | `docs/phase-1-abschlussbericht.md` | Phase-1-Abschlussbericht |
 | `docs/phase-2-abschlussbericht.md` | Phase-2-Abschlussbericht |
 | `docs/phase-3a-abschlussbericht.md` | Phase-3A-Abschlussbericht |
+| `docs/phase-3c-abschlussbericht.md` | Phase-3C-Abschlussbericht |
 | `docs/uebergabedokument-aktuell.md` | **Dieses Dokument** |
 | `docs/superpowers/plans/` | Alle Implementierungspläne |
+| `docs/superpowers/specs/` | Alle Design-Specs |
 | `Ernaehrungskonzept_fuer_Coach.md` | Ernährungskonzept für Coach-Gespräch |
 | `tests/manual-checklist-phase-2.md` | Phase-2-Smoke-Tests |
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-01 · APP_VERSION 1.2.2 · SCHEMA_VERSION 2 · Commit c20b509*
+*Zuletzt aktualisiert: 2026-06-02 · APP_VERSION 1.2.3 · SCHEMA_VERSION 2 · Commit b76c8cc*
