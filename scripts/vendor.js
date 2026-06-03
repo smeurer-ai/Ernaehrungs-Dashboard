@@ -13,6 +13,7 @@ const base = {
   format: 'esm',
   platform: 'browser',
   minify: false,
+  define: { 'process.env.NODE_ENV': '"production"' },
 };
 
 // React + ReactDOM gemeinsam – beide teilen intern dieselbe React-Instanz.
