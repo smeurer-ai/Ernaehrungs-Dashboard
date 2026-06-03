@@ -3,8 +3,8 @@
 **Projekt:** Ernährungs-Dashboard PWA  
 **Phase:** 3C von 3E (Phase-3-Teilphase)  
 **Datum:** 2026-06-02  
-**Branch:** `phase-3-tracker`  
-**Status:** ✅ Implementiert, getestet, manuell geprüft — PR erstellt
+**Branch:** `master` (gemerged aus `phase-3-tracker`)  
+**Status:** ✅ Implementiert, getestet, manuell geprüft — PR #1 gemerged
 
 ---
 
@@ -134,4 +134,4 @@ Weiterhin offen aus früheren Phasen (TS-05, TS-06, TS-07, TS-08) — unverände
 
 ---
 
-*Erstellt: 2026-06-02 · Branch: phase-3-tracker · Letzter Commit: b76c8cc*
+*Erstellt: 2026-06-02 · Branch: master · Letzter Commit: eed56a5*

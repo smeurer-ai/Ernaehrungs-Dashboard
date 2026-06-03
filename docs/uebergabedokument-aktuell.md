@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
-**Zuletzt aktualisiert:** 2026-06-02  
-**Stand:** Phase 3A + 3B + 3C + 3D abgeschlossen · Phase 3E als nächstes  
+**Zuletzt aktualisiert:** 2026-06-03  
+**Stand:** Phase 3A + 3B + 3C + 3D + CDN-Vendoring/CSP abgeschlossen · Phase 3E als nächstes  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `phase-3-tracker` (PR offen → master)  
-**APP_VERSION:** `1.2.3` · **SCHEMA_VERSION:** `2`
+**Branch:** `master` · Letzter Push: `9e2acd8`  
+**APP_VERSION:** `1.2.5` · **SCHEMA_VERSION:** `2`
 
 ---
 
@@ -20,6 +20,7 @@
 | **Phase 3B — Tagesbilanz** | ✅ | Ist-Werte aus Log summieren, DaySummary gefüllt, Protein je Slot in MealPlanEntry |
 | **Phase 3C — MPS-Vorbereitung** | ✅ | `rateMealProtein()` echte Logik, `isMainMealSlot()`, Leucin-Badge im Tracker |
 | **Phase 3D — Hydration-Karte** | ✅ | HydrationCard im Heute-Tab — zeitbasiert abgeblendet/hervorgehoben |
+| **CDN-Vendoring + CSP-Härtung** | ✅ | Keine externen JS-CDNs mehr; React/htm/idb lokal unter `assets/vendor/`; Google Fonts lokal unter `assets/fonts/`; CSP auf `script-src 'self'` verschärft; SW cached nur noch lokale Assets; 112 Tests grün |
 | **Phase 3E — OFD + Barcode** | ⏳ | Open Food Facts, Barcode-Scanner |
 | **Phase 4 — Rezepte** | ⏳ | Rezeptdatenbank mit Schritten, eigene Rezepte |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
@@ -45,9 +46,9 @@
 ## 2. Architektur-Kurzreferenz
 
 ```
-ernaehrung.html          ← PWA-Shell
+ernaehrung.html          ← PWA-Shell (CSP: script-src 'self', keine CDN-Quellen)
   └── js/app.js          ← React-Root, migrations, SW, UpdateBanner
-       ├── js/lib.js     ← React 18 + htm + idb (esm.sh/jsdelivr)
+       ├── js/lib.js     ← React 18 + htm + idb (lokal aus assets/vendor/)
        ├── js/calc/      ← bmr, macros, nutritionLogic, hydration, tracker
        ├── js/storage/   ← localStorage (Profil/Settings) + IndexedDB (log/week/foodsCustom/meals)
        ├── js/hooks/     ← useProfile, useSettings, useUiState, useLog, useFavoriteFoods
@@ -55,14 +56,15 @@ ernaehrung.html          ← PWA-Shell
        ├── js/ui/        ← Theme, Navigation, Modal, UpdateBanner, ...
        ├── js/data/      ← mealTemplates, tips
        └── js/tabs/      ← heute, tracker (vollständig), rezepte, woche, profil
+assets/vendor/           ← react.js, htm.js, idb.js (lokal gebündelt mit esbuild)
+assets/fonts/            ← fonts.css, DM Mono, DM Sans, Playfair Display (lokal)
 ```
 
-### CDN-Abhängigkeiten (fest versioniert in js/lib.js)
+### Lokale Vendor-Abhängigkeiten (js/lib.js — keine CDN-Requests mehr)
 ```javascript
-import React        from 'https://esm.sh/react@18.2.0';
-import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-import htm          from 'https://esm.sh/htm@3.1.1';
-import { openDB }   from 'https://cdn.jsdelivr.net/npm/idb@8/+esm';
+import React, { createRoot } from '../assets/vendor/react.js';
+import htm                   from '../assets/vendor/htm.js';
+import { openDB }            from '../assets/vendor/idb.js';
 ```
 
 ### Wichtige Konventionen
@@ -150,13 +152,14 @@ Bei neuen IndexedDB-Stores:
 ## 7. Tests
 
 ```
-tests/unit/calc/bmr.test.js           10 Tests
-tests/unit/calc/macros.test.js        23 Tests
-tests/unit/calc/nutritionLogic.test.js 36 Tests  (Phase 3C: +6 netto)
-tests/unit/calc/hydration.test.js     24 Tests
-tests/unit/calc/tracker.test.js       15 Tests
-─────────────────────────────────────────────
-Gesamt                               108 Tests — alle grün
+tests/unit/calc/bmr.test.js                10 Tests
+tests/unit/calc/macros.test.js             23 Tests
+tests/unit/calc/nutritionLogic.test.js     36 Tests
+tests/unit/calc/hydration.test.js          24 Tests
+tests/unit/calc/tracker.test.js            15 Tests
+tests/unit/security/htmlSecurity.test.js    4 Tests  (CDN-Blocklist + CSP-Härtung)
+──────────────────────────────────────────────────
+Gesamt                                    112 Tests — alle grün
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -170,7 +173,7 @@ Ausführen: `npm test` im Projekt-Root.
 | TS-01 | Keine Tests für IndexedDB-Hooks (fake-indexeddb nötig) | Vor Phase 3B (weiterhin offen) |
 | TS-05 | IndexedDB-Doppelöffnung (migrations.js + indexeddb.js) | Phase 3B |
 | TS-06 | Toast außerhalb Provider schlägt lautlos fehl | Phase 3B |
-| TS-07 | Google Fonts nicht offline-fähig | Phase 3+ optional |
+| ~~TS-07~~ | ~~Google Fonts nicht offline-fähig~~ | ✅ erledigt — Fonts lokal unter `assets/fonts/` |
 | TS-08 | `new Date().toISOString()` nutzt UTC → kurz nach Mitternacht falsches Datum | Gemeinsamer Fix HeuteTab + Tracker |
 
 ---
@@ -182,7 +185,12 @@ Ausführen: `npm test` im Projekt-Root.
 1. ~~**Phase 3D**~~ ✅ erledigt
 2. ~~**Phase 3B**~~ ✅ erledigt
 3. ~~**Phase 3C**~~ ✅ erledigt
-4. **Phase 3E**: Open Food Facts + Barcode-Scanner
+4. ~~**CDN-Vendoring + CSP**~~ ✅ erledigt (v1.2.5, Push `9e2acd8`)
+5. **Offene uncommitted Änderungen vor Phase 4 klären:**
+   - `js/calc/macros.js` + `js/calc/nutritionLogic.js` + `tests/unit/calc/macros.test.js` — Bugfixes (defensiver Fallback, tdee-Guard)
+   - `docs/phase-3c-abschlussbericht.md` + `docs/uebergabedokument-aktuell.md` — Doku-Updates
+   - Diese separat committen oder bewusst verwerfen, bevor Phase 4 startet
+6. **Phase 3E**: Open Food Facts + Barcode-Scanner
    - Produktsuche nach Name oder Barcode-Scan
    - Leucin-Schätzung aus Produktkategorie verfeinern (bessere Basis als nur Proteinmenge)
    - `leucineEstimateG`, `mpsTriggered` in TrackedFood befüllen (SCHEMA_VERSION bleibt 2 — optionale Felder)
@@ -191,7 +199,7 @@ Ausführen: `npm test` im Projekt-Root.
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
 - PR nach master nach Abschluss
-- Aktuell offen: `phase-3-tracker` → master
+- Aktuell: `master` ist synchron; nächste Phase auf neuem Feature-Branch starten
 
 ---
 
@@ -212,4 +220,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-02 · APP_VERSION 1.2.3 · SCHEMA_VERSION 2 · Commit b76c8cc*
+*Zuletzt aktualisiert: 2026-06-03 · APP_VERSION 1.2.5 · SCHEMA_VERSION 2 · Commit 9e2acd8*
