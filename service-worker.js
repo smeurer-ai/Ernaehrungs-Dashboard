@@ -1,14 +1,20 @@
 // service-worker.js
 // Version muss mit js/version.js synchron gehalten werden.
-// Bei jedem Phase-Release: APP_VERSION hochzählen.
-const APP_VERSION = '1.2.3';
+const APP_VERSION = '1.2.5';
 const CACHE_STATIC = `ernaehrung-static-${APP_VERSION}`;
-const CACHE_CDN    = `ernaehrung-cdn-${APP_VERSION}`;
 
 // ── Lokale Assets (vollständig pre-cachen beim Install) ──────────────────────
 const LOCAL_ASSETS = [
   './ernaehrung.html',
   './manifest.json',
+  './assets/fonts/fonts.css',
+  './assets/fonts/dm-mono-400.ttf',
+  './assets/fonts/dm-sans-400.ttf',
+  './assets/fonts/dm-sans-600.ttf',
+  './assets/fonts/playfair-display-700.ttf',
+  './assets/vendor/react.js',
+  './assets/vendor/htm.js',
+  './assets/vendor/idb.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
@@ -65,26 +71,12 @@ const LOCAL_ASSETS = [
   './js/tabs/profil/ProfileEditor.js',
 ];
 
-// ── CDN-Assets (best-effort pre-cachen, Fehler erlaubt) ──────────────────────
-const CDN_ASSETS = [
-  'https://esm.sh/react@18.2.0',
-  'https://esm.sh/react-dom@18.2.0/client',
-  'https://esm.sh/htm@3.1.1',
-  'https://cdn.jsdelivr.net/npm/idb@8/+esm',
-];
-
 // ── Install: alle lokalen Assets synchron cachen ──────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_STATIC)
-      .then(cache => cache.addAll(LOCAL_ASSETS))
-      .then(() =>
-        caches.open(CACHE_CDN).then(cache =>
-          Promise.allSettled(CDN_ASSETS.map(url => cache.add(url)))
-        )
-      )
+    caches.open(CACHE_STATIC).then(cache => cache.addAll(LOCAL_ASSETS))
   );
-  // KEIN skipWaiting() hier — neuer SW wartet, bis UpdateBanner die Nutzerin fragt
+  // KEIN skipWaiting() — neuer SW wartet, bis UpdateBanner die Nutzerin fragt
 });
 
 // ── Activate: alte Caches löschen + Kontrolle übernehmen ─────────────────────
@@ -110,7 +102,6 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   if (url.protocol === 'chrome-extension:') return;
 
-  // ── Lokale Assets: Cache-First ──
   if (url.origin === self.location.origin) {
     event.respondWith(
       caches.match(request).then(cached => {
@@ -127,23 +118,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // ── CDN (esm.sh + jsdelivr): Stale-While-Revalidate ──
-  if (url.hostname === 'esm.sh' || url.hostname === 'cdn.jsdelivr.net') {
-    event.respondWith(
-      caches.open(CACHE_CDN).then(cache =>
-        cache.match(request).then(cached => {
-          const networkFetch = fetch(request).then(resp => {
-            if (resp.ok) cache.put(request, resp.clone());
-            return resp;
-          }).catch(() => cached);
-          return cached || networkFetch;
-        })
-      )
-    );
-    return;
-  }
-
-  // ── Alles andere: Network-First mit Cache-Fallback ──
+  // Alles andere: Network-First mit Cache-Fallback
   event.respondWith(
     fetch(request).catch(() => caches.match(request))
   );
