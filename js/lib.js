@@ -9,10 +9,9 @@
  *   import { React, html, useState } from '../../lib.js';
  */
 
-import React from 'https://esm.sh/react@18.2.0';
-import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-import htm from 'https://esm.sh/htm@3.1.1';
-import { openDB as _openDB } from 'https://cdn.jsdelivr.net/npm/idb@8/+esm';
+import React, { createRoot } from '../assets/vendor/react.js';
+import htm from '../assets/vendor/htm.js';
+import { openDB as _openDB } from '../assets/vendor/idb.js';
 
 // htm an UNSERE React-Instanz binden — verhindert Mehrfach-Instanz-Fehler
 const html = htm.bind(React.createElement);
