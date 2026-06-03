@@ -42,6 +42,9 @@
  */
 export function assessDeficit(profile, tdee) {
   const deficitKcal = profile.deficit;
+  if (!tdee || tdee <= 0) {
+    return { deficitKcal, percentOfTDEE: 0, severity: 'unknown' };
+  }
   const percentOfTDEE = deficitKcal / tdee;
 
   // Postmenopausale Schwellen (enger als Standard-Empfehlungen)

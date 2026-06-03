@@ -72,10 +72,11 @@ describe('calcProteinTarget', () => {
     })).toBe(130);
   });
 
-  it('wirft Fehler bei unbekanntem Modus', () => {
-    expect(() => calcProteinTarget({
+  it('nutzt einen defensiven Fallback bei unbekanntem Modus', () => {
+    expect(calcProteinTarget({
       proteinTargetMode: 'invalid',
-    })).toThrow('Unbekannter proteinTargetMode: invalid');
+      proteinPerKg: 120,
+    })).toBe(120);
   });
 
   it('gibt ganzzahligen Wert zurück', () => {

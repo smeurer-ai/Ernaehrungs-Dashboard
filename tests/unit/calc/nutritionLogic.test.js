@@ -105,6 +105,24 @@ describe('assessDeficit', () => {
     // Empfehlung: max. Math.round(2000 × 0.20) = 400 kcal
     expect(result.warning).toContain('400');
   });
+
+  // ── Defensiver Fallback bei fehlendem/ungültigem tdee ─────────────────────
+
+  it('gibt severity unknown zurück wenn tdee 0 ist', () => {
+    const result = assessDeficit({ deficit: 300 }, 0);
+    expect(result.severity).toBe('unknown');
+    expect(result.percentOfTDEE).toBe(0);
+    expect(result.deficitKcal).toBe(300);
+    expect(result).not.toHaveProperty('warning');
+  });
+
+  it('gibt severity unknown zurück wenn tdee undefined ist', () => {
+    const result = assessDeficit({ deficit: 400 }, undefined);
+    expect(result.severity).toBe('unknown');
+    expect(result.percentOfTDEE).toBe(0);
+    expect(result.deficitKcal).toBe(400);
+    expect(result).not.toHaveProperty('warning');
+  });
 });
 
 // ── isMainMealSlot ────────────────────────────────────────────────────────────

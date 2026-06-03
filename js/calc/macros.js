@@ -71,7 +71,7 @@ export function calcProteinTarget(profile) {
     case 'fixed':
       return Math.round(proteinPerKg);
     default:
-      throw new Error(`Unbekannter proteinTargetMode: ${proteinTargetMode}`);
+      return Math.round(proteinPerKg || 0);
   }
 }
 
