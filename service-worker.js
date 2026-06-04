@@ -1,6 +1,6 @@
 // service-worker.js
 // Version muss mit js/version.js synchron gehalten werden.
-const APP_VERSION = '1.2.7';
+const APP_VERSION = '1.3.0';
 const CACHE_STATIC = `ernaehrung-static-${APP_VERSION}`;
 
 // ── Lokale Assets (vollständig pre-cachen beim Install) ──────────────────────
@@ -33,6 +33,7 @@ const LOCAL_ASSETS = [
   './js/calc/tracker.js',
   './js/hooks/useLog.js',
   './js/hooks/useFavoriteFoods.js',
+  './js/hooks/useRecipes.js',
   './js/tabs/tracker/TrackerTab.js',
   './js/tabs/tracker/DayLogList.js',
   './js/tabs/tracker/DayLogEntry.js',
@@ -40,6 +41,8 @@ const LOCAL_ASSETS = [
   './js/tabs/tracker/FavoritePicker.js',
   './js/data/mealTemplates.js',
   './js/data/tips.js',
+  './js/data/mealSlots.js',
+  './js/data/initialRecipes.js',
   './js/hooks/useProfile.js',
   './js/hooks/useSettings.js',
   './js/hooks/useUiState.js',
@@ -60,6 +63,8 @@ const LOCAL_ASSETS = [
   './js/tabs/heute/MealPlanList.js',
   './js/tabs/heute/HeuteTab.js',
   './js/tabs/tracker/TrackerTab.js',
+  './js/tabs/rezepte/RecipeCard.js',
+  './js/tabs/rezepte/RecipeEditor.js',
   './js/tabs/rezepte/RezepteTab.js',
   './js/tabs/woche/WeekGrid.js',
   './js/tabs/woche/WocheTab.js',
