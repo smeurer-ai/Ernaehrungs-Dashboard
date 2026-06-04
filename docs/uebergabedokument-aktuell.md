@@ -32,8 +32,8 @@
 
 - ✅ Installierbar als PWA, offline-fähig
 - ✅ Bottom-Navigation (5 Tabs)
-- ✅ Mahlzeitenplan (Trainings-/Ruhetag, dynamische Trainingszeit)
-- ✅ Profil editierbar (Katch-McArdle, drei Protein-Modi, Defizit-Warnung)
+- ✅ Mahlzeitenplan (Trainings-/Ruhetag, dynamische Trainingszeit + Trainingsdauer)
+- ✅ Profil editierbar (Katch-McArdle, drei Protein-Modi, Defizit-Warnung, Aufwachzeit, Standard-Trainingsdauer)
 - ✅ **Tracker-Tab:** Mahlzeiten manuell eintragen, Favoriten anlegen, Tagesliste, Bearbeiten/Löschen
 - ✅ **MPS-Badge:** Pro Mahlzeit-Slot `~✓ / ~⚠ / ~✗ Leucin` mit ℹ️-Schätzungs-Hinweis (Phase 3C)
 - ✅ **Hydration-Karte:** Trink-Erinnerungen im Heute-Tab (zeitbasiert: vergangen = abgeblendet, nächste = hervorgehoben)
@@ -68,6 +68,22 @@ import React, { createRoot } from '../assets/vendor/react.js';
 import htm                   from '../assets/vendor/htm.js';
 import { openDB }            from '../assets/vendor/idb.js';
 ```
+
+### Trainingszeit-Anker (2 Ebenen)
+
+| Feld | Wo gespeichert | Bedeutung |
+|---|---|---|
+| `profile.wakeUpTime` | localStorage (Profil) | Aufwachzeit — Profilanker; Frühstück = wakeUpTime + 60 Min |
+| `profile.trainingDurationMin` | localStorage (Profil) | Standard-Trainingsdauer (z.B. 60 Min) |
+| `uiState.preferredTrainingDurationMin` | localStorage (UiState) | Tages-Override; `null` = Profil-Default verwenden |
+
+```javascript
+// effectiveDurationMin — wird in HeuteTab berechnet und an alle Komponenten übergeben
+const effectiveDurationMin =
+  uiState.preferredTrainingDurationMin ?? profile.trainingDurationMin ?? 60;
+```
+
+DayTypeSwitch-Vorschau, MealPlanList und TrackerTab verwenden immer `effectiveDurationMin` — nie hardcoded T + 90.
 
 ### Wichtige Konventionen
 - **htm statt JSX:** `` html`<div>...</div>` `` — kein Babel, kein Build

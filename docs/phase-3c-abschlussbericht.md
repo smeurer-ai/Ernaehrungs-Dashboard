@@ -134,4 +134,39 @@ Weiterhin offen aus früheren Phasen (TS-05, TS-06, TS-07, TS-08) — unverände
 
 ---
 
-*Erstellt: 2026-06-02 · Branch: master · Letzter Commit: eed56a5*
+---
+
+## 9. Nachträglich vor Phase 4: Trainingszeit- und Trainingsdauer-Logik stabilisiert
+
+**Datum:** 2026-06-04 · **APP_VERSION:** 1.2.6 → 1.2.7
+
+### Warum
+
+Das Training findet typischerweise 2× pro Woche à 60 Minuten und 1× pro Woche à 90 Minuten statt. Die bisherige Logik verwendete eine hardcoded Post-Workout-Formel `T + 90 Min` und eine feste Frühstückszeit 08:00 — unabhängig von Aufwachzeit und tatsächlicher Trainingsdauer. Das führte zu:
+- fehlendem Frühstück bei Training ab Mittvormittag (z.B. 10–11 Uhr)
+- falsch berechneter Post-Workout-Zeit bei kurzen (45 Min) oder langen (90 Min) Einheiten
+
+### Was umgesetzt wurde
+
+**v1.2.6 — Mahlzeitenanker flexibilisiert:**
+- `profile.wakeUpTime` als Profilanker: Frühstück = wakeUpTime + 60 Min (statt fest 08:00)
+- `profile.trainingDurationMin` als Profil-Default (Standard: 60 Min)
+- Post-Workout = T + trainingDurationMin + 30 Min (statt hardcoded T + 90)
+- Frühstück erscheint bei Training ab Mittvormittag wieder als erster Slot
+
+**v1.2.7 — Trainingsdauer pro Trainingstag wählbar:**
+- `uiState.preferredTrainingDurationMin` (localStorage, `null` = Profil-Default)
+- Dropdown „Trainingsdauer heute" (45 / 60 / 75 / 90 / 105 / 120 Min) im Heute-Tab
+- Tagesauswahl überschreibt Profil-Default ohne Schema-Änderung
+- DayTypeSwitch-Vorschau, Mahlzeitenplan und Tracker-Slots verwenden exakt dieselbe `effectiveDurationMin`
+
+### Ergebnis
+
+Post-Workout-Zeit wird pro Trainingstag korrekt berechnet. An einem 90-Minuten-Tag (T = 10:00):
+- Post-Workout: 12:00 Uhr (T + 90 + 30 = T + 120) statt 11:30
+
+Kein neues IndexedDB-Schema. Kein Datenverlust. Bestehende Profile mit `null`-Werten verhalten sich durch Defaultwerte unverändert.
+
+---
+
+*Erstellt: 2026-06-02 · Ergänzt: 2026-06-04 · APP_VERSION 1.2.7 · Branch: master*
