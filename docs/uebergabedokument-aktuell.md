@@ -4,7 +4,7 @@
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
 **Branch:** `master` · Letzter Push: `9e2acd8`  
-**APP_VERSION:** `1.2.6` · **SCHEMA_VERSION:** `2`
+**APP_VERSION:** `1.2.7` · **SCHEMA_VERSION:** `2`
 
 ---
 
@@ -21,7 +21,8 @@
 | **Phase 3C — MPS-Vorbereitung** | ✅ | `rateMealProtein()` echte Logik, `isMainMealSlot()`, Leucin-Badge im Tracker |
 | **Phase 3D — Hydration-Karte** | ✅ | HydrationCard im Heute-Tab — zeitbasiert abgeblendet/hervorgehoben |
 | **CDN-Vendoring + CSP-Härtung** | ✅ | Keine externen JS-CDNs mehr; React/htm/idb lokal unter `assets/vendor/`; Google Fonts lokal unter `assets/fonts/`; CSP auf `script-src 'self'` verschärft; SW cached nur noch lokale Assets |
-| **Mahlzeitenanker flexibilisiert** | ✅ | `wakeUpTime` + `trainingDurationMin` im Profil; Frühstück = wakeUpTime + 60 Min; Post-Workout = T + Dauer + 30 Min; Frühstück bei Mittvormittags-Training wieder sichtbar; 150 Tests grün |
+| **Mahlzeitenanker flexibilisiert** | ✅ | `wakeUpTime` + `trainingDurationMin` im Profil; Frühstück = wakeUpTime + 60 Min; Post-Workout = T + Dauer + 30 Min; Frühstück bei Mittvormittags-Training wieder sichtbar |
+| **Trainingsdauer pro Tag wählbar** | ✅ | Dropdown „Trainingsdauer heute" (45–120 Min) im Heute-Tab; Tagesauswahl überschreibt Profil-Default; Vorschau + Mahlzeitenplan + Tracker synchron; 153 Tests grün |
 | **Phase 3E — OFD + Barcode** | ⏳ | Open Food Facts, Barcode-Scanner |
 | **Phase 4 — Rezepte** | ⏳ | Rezeptdatenbank mit Schritten, eigene Rezepte |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
@@ -158,10 +159,10 @@ tests/unit/calc/macros.test.js             23 Tests
 tests/unit/calc/nutritionLogic.test.js     38 Tests
 tests/unit/calc/hydration.test.js          24 Tests
 tests/unit/calc/tracker.test.js            15 Tests
-tests/unit/calc/mealTemplates.test.js      36 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin)
+tests/unit/calc/mealTemplates.test.js      39 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin, null-Fallbacks)
 tests/unit/security/htmlSecurity.test.js    4 Tests  (CDN-Blocklist + CSP-Härtung)
 ──────────────────────────────────────────────────
-Gesamt                                    150 Tests — alle grün
+Gesamt                                    153 Tests — alle grün
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -220,4 +221,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-04 · APP_VERSION 1.2.6 · SCHEMA_VERSION 2*
+*Zuletzt aktualisiert: 2026-06-04 · APP_VERSION 1.2.7 · SCHEMA_VERSION 2*
