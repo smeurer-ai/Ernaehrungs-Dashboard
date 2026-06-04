@@ -42,7 +42,20 @@ export const INDEXED_DB_MIGRATIONS = {
     mealsStore.createIndex('updatedAt', 'updatedAt', { unique: false });
   },
 
-  // v3: kommt in Phase 4 (Rezepte)
+  /**
+   * v3: Phase 4 — Eigene Rezepte + Rezeptfotos
+   * @param {import('idb').IDBPDatabase} db
+   */
+  3: (db) => {
+    const recipes = db.createObjectStore('recipesCustom', { keyPath: 'id' });
+    recipes.createIndex('name',      'name',      { unique: false });
+    recipes.createIndex('mealSlot',  'mealSlot',  { unique: false });
+    recipes.createIndex('updatedAt', 'updatedAt', { unique: false });
+
+    const photos = db.createObjectStore('recipePhotos', { keyPath: 'id' });
+    photos.createIndex('recipeId', 'recipeId', { unique: false });
+  },
+
   // v4: kommt in Phase 5 (Körperwerte)
   // v5: kommt in Phase 6 (Sync-Metadaten)
 };
