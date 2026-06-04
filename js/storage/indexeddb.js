@@ -219,3 +219,34 @@ export async function deleteFavoriteFood(id) {
   const db = await openDb();
   await db.delete('foodsCustom', id);
 }
+
+// ---------------------------------------------------------------------------
+// recipesCustom-Store (Eigene Rezepte, Phase 4)
+// ---------------------------------------------------------------------------
+
+export async function getAllCustomRecipes() {
+  const db = await openDb();
+  const all = await db.getAll('recipesCustom');
+  return all
+    .filter(r => !r.deletedAt)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
+export async function saveCustomRecipe(recipe) {
+  const db = await openDb();
+  const now = Date.now();
+  const existing = await db.get('recipesCustom', recipe.id);
+  await db.put('recipesCustom', {
+    ...recipe,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+    deviceId: getDeviceId(),
+  });
+}
+
+export async function deleteCustomRecipe(id) {
+  const db = await openDb();
+  const existing = await db.get('recipesCustom', id);
+  if (!existing) return;
+  await db.put('recipesCustom', { ...existing, deletedAt: Date.now() });
+}
