@@ -79,7 +79,7 @@ function App() {
           dayType=${uiState.preferredDayType}
           trainingTime=${uiState.preferredTrainingTime}
           wakeUpTime=${profile?.wakeUpTime}
-          trainingDurationMin=${profile?.trainingDurationMin}
+          trainingDurationMin=${uiState.preferredTrainingDurationMin ?? profile?.trainingDurationMin ?? 60}
         />
       `;
       case 'rezepte': return html`<${RezepteTab} />`;

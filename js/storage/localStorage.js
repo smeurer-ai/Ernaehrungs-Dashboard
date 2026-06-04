@@ -33,6 +33,7 @@ function defaultUiState() {
     collapsedSections: [],
     preferredDayType: 'training',
     preferredTrainingTime: '08:00',
+    preferredTrainingDurationMin: null,
     lastVisitedAt: Date.now(),
   };
 }

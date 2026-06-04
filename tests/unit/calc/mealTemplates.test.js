@@ -9,6 +9,30 @@ function getSlotLabels(meals) {
   return meals.map(m => m.label);
 }
 
+// ── Null-Fallbacks ────────────────────────────────────────────────────────────
+
+describe('getMealTemplate / generateTrainingDayMeals – Null-Fallbacks', () => {
+  it('null als trainingDurationMin → Fallback auf 60 Min (Post = T + 90)', () => {
+    const meals = getMealTemplate('training', '10:00', '07:00', null);
+    const post = meals.find(m => m.label === 'Post-Workout');
+    expect(post.time).toBe('11:30'); // T=10:00 + 60 + 30 = 11:30
+  });
+
+  it('null als wakeUpTime → Fallback auf 07:00 (Training 12:00 zeigt Frühstück 08:00)', () => {
+    const meals = getMealTemplate('training', '12:00', null, 60);
+    const breakfast = meals.find(m => m.label === 'Frühstück');
+    expect(breakfast).toBeDefined();
+    expect(breakfast.time).toBe('08:00'); // wakeUp 07:00 + 60 = 08:00
+  });
+
+  it('null für beide optionalen Parameter → Verhalten wie bare generateTrainingDayMeals("10:00")', () => {
+    const withNull = getMealTemplate('training', '10:00', null, null);
+    const withDefaults = generateTrainingDayMeals('10:00');
+    expect(withNull.map(m => m.time)).toEqual(withDefaults.map(m => m.time));
+    expect(withNull.map(m => m.label)).toEqual(withDefaults.map(m => m.label));
+  });
+});
+
 // ── Ruhetag ───────────────────────────────────────────────────────────────────
 
 describe('getMealTemplate – Ruhetag', () => {

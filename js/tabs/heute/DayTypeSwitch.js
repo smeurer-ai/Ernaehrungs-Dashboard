@@ -12,6 +12,7 @@ function buildTimeOptions() {
   return opts;
 }
 const TIME_OPTIONS = buildTimeOptions();
+const DURATION_OPTIONS = [45, 60, 75, 90, 105, 120];
 
 /** Minuten → "HH:MM Uhr" */
 function fmtTime(minutes) {
@@ -19,11 +20,12 @@ function fmtTime(minutes) {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')} Uhr`;
 }
 
-export function DayTypeSwitch({ dayType, trainingTime, onDayTypeChange, onTrainingTimeChange }) {
+export function DayTypeSwitch({ dayType, trainingTime, trainingDurationMin, onDayTypeChange, onTrainingTimeChange, onTrainingDurationChange }) {
   const t = (trainingTime || '08:00').split(':').map(Number);
   const T = t[0] * 60 + (t[1] || 0);
+  const duration = trainingDurationMin || 60;
   const preLabel  = fmtTime(T - 75);
-  const postLabel = fmtTime(T + 90);
+  const postLabel = fmtTime(T + duration + 30);
 
   return html`
     <div style=${S.card}>
@@ -37,7 +39,7 @@ export function DayTypeSwitch({ dayType, trainingTime, onDayTypeChange, onTraini
         </button>
       </div>
 
-      <!-- Trainingszeit-Auswahl (nur bei Trainingstag) -->
+      <!-- Trainingszeit + Trainingsdauer (nur bei Trainingstag) -->
       ${dayType === 'training' && html`
         <div>
           <label style=${{
@@ -57,7 +59,24 @@ export function DayTypeSwitch({ dayType, trainingTime, onDayTypeChange, onTraini
             `)}
           </select>
 
-          <!-- Vorschau Pre/Post relativ zur gewählten Zeit -->
+          <label style=${{
+            fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase',
+            color: COLORS.textMuted, fontFamily: FONTS.mono, marginBottom: '6px', marginTop: '10px', display: 'block',
+          }}>
+            Trainingsdauer heute
+          </label>
+
+          <select
+            value=${duration}
+            onChange=${e => onTrainingDurationChange(Number(e.target.value))}
+            style=${{ ...S.input, cursor: 'pointer' }}
+          >
+            ${DURATION_OPTIONS.map(d => html`
+              <option key=${d} value=${d}>${d} Min</option>
+            `)}
+          </select>
+
+          <!-- Vorschau Pre/Post relativ zur gewählten Zeit und Dauer -->
           <div style=${{
             display: 'flex', gap: '16px', marginTop: '8px',
             fontSize: '11px', color: COLORS.textMuted, fontFamily: FONTS.mono,

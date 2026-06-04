@@ -12,7 +12,10 @@ export function HeuteTab({ profile, calculated }) {
   const [uiState, updateUiState] = useUiState();
   const { preferredDayType: dayType, preferredTrainingTime: trainingTime } = uiState;
   const wakeUpTime = profile?.wakeUpTime;
-  const trainingDurationMin = profile?.trainingDurationMin;
+
+  // Tagesauswahl (uiState) hat Vorrang vor Profil-Default; Fallback 60 Min
+  const effectiveDurationMin =
+    uiState.preferredTrainingDurationMin ?? profile?.trainingDurationMin ?? 60;
 
   const today = new Date().toISOString().split('T')[0];
   const { entries, loading } = useLog(today, { dayType, trainingTime });
@@ -36,12 +39,21 @@ export function HeuteTab({ profile, calculated }) {
       <${DayTypeSwitch}
         dayType=${dayType}
         trainingTime=${trainingTime}
+        trainingDurationMin=${effectiveDurationMin}
         onDayTypeChange=${d => updateUiState({ preferredDayType: d })}
         onTrainingTimeChange=${t => updateUiState({ preferredTrainingTime: t })}
+        onTrainingDurationChange=${d => updateUiState({ preferredTrainingDurationMin: d })}
       />
       <${DaySummary} macros=${macros} consumed=${consumed} />
       <div style=${S.cardTitle}>Mahlzeitenplan</div>
-      <${MealPlanList} dayType=${dayType} trainingTime=${trainingTime} macros=${macros} consumedBySlot=${consumedBySlot} wakeUpTime=${wakeUpTime} trainingDurationMin=${trainingDurationMin} />
+      <${MealPlanList}
+        dayType=${dayType}
+        trainingTime=${trainingTime}
+        macros=${macros}
+        consumedBySlot=${consumedBySlot}
+        wakeUpTime=${wakeUpTime}
+        trainingDurationMin=${effectiveDurationMin}
+      />
       <${HydrationCard} dayType=${dayType} trainingTime=${trainingTime} />
     </div>
   `;

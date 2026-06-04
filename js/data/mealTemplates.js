@@ -71,11 +71,13 @@ export const REST_MEALS = [
  * @returns {Array} 4 Mahlzeit-Objekte
  */
 export function generateTrainingDayMeals(trainingTimeStr, wakeUpTime = '07:00', trainingDurationMin = 60) {
+  const duration = trainingDurationMin || 60;   // null/undefined/0 → 60 Min
+  const wake     = wakeUpTime || '07:00';       // null/undefined → 07:00
   const T    = clamp(toMin(trainingTimeStr), 5 * 60, 22 * 60);
   const pre  = clamp(T - 75, 5 * 60, 22 * 60);
-  const post = clamp(T + trainingDurationMin + 30, 6 * 60, 23 * 60);
+  const post = clamp(T + duration + 30, 6 * 60, 23 * 60);
 
-  const BREAKFAST        = clamp(toMin(wakeUpTime) + 60, 5 * 60, 11 * 60); // wakeUp + 60 Min
+  const BREAKFAST        = clamp(toMin(wake) + 60, 5 * 60, 11 * 60); // wakeUp + 60 Min
   const EARLY_CUTOFF     = BREAKFAST + 90; // Frühtraining wenn Pre < BREAKFAST + 90
   const AFTERNOON_CUTOFF = 13.0 * 60;     // 13:00 — Grenze Spättraining
 
