@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
 **Zuletzt aktualisiert:** 2026-06-04  
-**Stand:** Phase 3A + 3B + 3C + 3D + CDN-Vendoring/CSP + Mahlzeitenanker abgeschlossen · Phase 3E als nächstes  
+**Stand:** Phase 4 Rezepte abgeschlossen · Phase 3E als nächstes  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
 **Branch:** `master` · Letzter Push: `9e2acd8`  
-**APP_VERSION:** `1.2.7` · **SCHEMA_VERSION:** `2`
+**APP_VERSION:** `1.3.0` · **SCHEMA_VERSION:** `3`
 
 ---
 
@@ -22,9 +22,9 @@
 | **Phase 3D — Hydration-Karte** | ✅ | HydrationCard im Heute-Tab — zeitbasiert abgeblendet/hervorgehoben |
 | **CDN-Vendoring + CSP-Härtung** | ✅ | Keine externen JS-CDNs mehr; React/htm/idb lokal unter `assets/vendor/`; Google Fonts lokal unter `assets/fonts/`; CSP auf `script-src 'self'` verschärft; SW cached nur noch lokale Assets |
 | **Mahlzeitenanker flexibilisiert** | ✅ | `wakeUpTime` + `trainingDurationMin` im Profil; Frühstück = wakeUpTime + 60 Min; Post-Workout = T + Dauer + 30 Min; Frühstück bei Mittvormittags-Training wieder sichtbar |
-| **Trainingsdauer pro Tag wählbar** | ✅ | Dropdown „Trainingsdauer heute" (45–120 Min) im Heute-Tab; Tagesauswahl überschreibt Profil-Default; Vorschau + Mahlzeitenplan + Tracker synchron; 153 Tests grün |
+| **Trainingsdauer pro Tag wählbar** | ✅ | Dropdown „Trainingsdauer heute" (45–120 Min) im Heute-Tab; Tagesauswahl überschreibt Profil-Default; Vorschau + Mahlzeitenplan + Tracker synchron |
+| **Phase 4 — Rezepte** | ✅ | 8 Initialrezepte mit Zutaten/Schritten; expandierbare Karten; eigene Rezepte anlegen/bearbeiten/löschen; Schema v3 (recipesCustom + recipePhotos); Export/Import |
 | **Phase 3E — OFD + Barcode** | ⏳ | Open Food Facts, Barcode-Scanner |
-| **Phase 4 — Rezepte** | ⏳ | Rezeptdatenbank mit Schritten, eigene Rezepte |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung |
 
@@ -38,8 +38,8 @@
 - ✅ **MPS-Badge:** Pro Mahlzeit-Slot `~✓ / ~⚠ / ~✗ Leucin` mit ℹ️-Schätzungs-Hinweis (Phase 3C)
 - ✅ **Hydration-Karte:** Trink-Erinnerungen im Heute-Tab (zeitbasiert: vergangen = abgeblendet, nächste = hervorgehoben)
 - ✅ **Tagesbilanz:** KcalRing + MacroBars mit echten Ist-Werten; Protein je Mahlzeit-Slot mit Farbkodierung
+- ✅ **Rezepte-Tab:** 8 Initialrezepte mit Zutaten und Schritten; eigene Rezepte anlegen/bearbeiten/löschen (in IndexedDB); Export/Import inklusive
 - ✅ Export/Import JSON, Backup-Erinnerung
-- ✅ 8 Initial-Rezepte, Wochenübersicht (Grundgerüst)
 - ❌ Lebensmittelsuche / Barcode → Phase 3E
 - ❌ Tagesübersicht MPS-Wirksamkeit → Phase 3E
 
@@ -53,11 +53,11 @@ ernaehrung.html          ← PWA-Shell (CSP: script-src 'self', keine CDN-Quelle
        ├── js/lib.js     ← React 18 + htm + idb (lokal aus assets/vendor/)
        ├── js/calc/      ← bmr, macros, nutritionLogic, hydration, tracker
        ├── js/storage/   ← localStorage (Profil/Settings) + IndexedDB (log/week/foodsCustom/meals)
-       ├── js/hooks/     ← useProfile, useSettings, useUiState, useLog, useFavoriteFoods
+       ├── js/hooks/     ← useProfile, useSettings, useUiState, useLog, useFavoriteFoods, useRecipes
        ├── js/pwa/       ← registerServiceWorker
        ├── js/ui/        ← Theme, Navigation, Modal, UpdateBanner, ...
-       ├── js/data/      ← mealTemplates, tips
-       └── js/tabs/      ← heute, tracker (vollständig), rezepte, woche, profil
+       ├── js/data/      ← mealTemplates, tips, mealSlots, initialRecipes
+       └── js/tabs/      ← heute, tracker (vollständig), rezepte (Phase 4), woche, profil
 assets/vendor/           ← react.js, htm.js, idb.js (lokal gebündelt mit esbuild)
 assets/fonts/            ← fonts.css, DM Mono, DM Sans, Playfair Display (lokal)
 ```
@@ -123,7 +123,7 @@ Bei neuen IndexedDB-Stores:
 | Wochenprotokoll | IndexedDB | `week` (keyPath: weekKey) |
 | **Favoriten-Lebensmittel** | **IndexedDB** | **`foodsCustom`** (Phase 3A, neu) |
 | **Favoriten-Mahlzeiten** | **IndexedDB** | **`meals`** (Phase 3A, angelegt, noch leer) |
-| (Phase 4) Eigene Rezepte | IndexedDB | `recipesCustom` |
+| **Eigene Rezepte** | **IndexedDB** | **`recipesCustom`** (Phase 4) |
 | (Phase 5) Kühlschrank | IndexedDB | `fridge` |
 | (Phase 6) API-Cache | IndexedDB | `apiCache` |
 
@@ -132,8 +132,8 @@ Bei neuen IndexedDB-Stores:
 | Version | Phase | Stores |
 |---|---|---|
 | **1** | Phase 1 | `log`, `week` |
-| **2** (aktuell) | Phase 3A | + `foodsCustom`, `meals` |
-| 3 | Phase 4 | + `recipesCustom`, `recipePhotos` |
+| **2** | Phase 3A | + `foodsCustom`, `meals` |
+| **3** (aktuell) | Phase 4 | + `recipesCustom`, `recipePhotos` |
 | 4 | Phase 5 | + `fridge` |
 | 5 | Phase 6 | + `apiCache` |
 
@@ -177,8 +177,12 @@ tests/unit/calc/hydration.test.js          24 Tests
 tests/unit/calc/tracker.test.js            15 Tests
 tests/unit/calc/mealTemplates.test.js      39 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin, null-Fallbacks)
 tests/unit/security/htmlSecurity.test.js    4 Tests  (CDN-Blocklist + CSP-Härtung)
+tests/unit/storage/migrations.test.js       5 Tests  (Schema v3 Migration)
+tests/unit/storage/indexeddb.test.js        8 Tests  (CRUD recipesCustom — saveCustomRecipe, getAllCustomRecipes, deleteCustomRecipe)
+tests/unit/storage/exportImport.test.js     4 Tests  (recipesCustom Export/Import + Altdaten-Robustheit)
+tests/unit/data/initialRecipes.test.js      8 Tests  (Struktur aller 8 Rezepte)
 ──────────────────────────────────────────────────
-Gesamt                                    153 Tests — alle grün
+Gesamt                                    178 Tests — alle grün
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -206,7 +210,8 @@ Ausführen: `npm test` im Projekt-Root.
 3. ~~**Phase 3C**~~ ✅ erledigt
 4. ~~**CDN-Vendoring + CSP**~~ ✅ erledigt (v1.2.5, Push `9e2acd8`)
 5. ~~**Mahlzeitenanker flexibilisiert**~~ ✅ erledigt (v1.2.6)
-6. **Phase 3E**: Open Food Facts + Barcode-Scanner
+6. ~~**Phase 4 — Rezepte**~~ ✅ erledigt (v1.3.0) — 8 Initialrezepte, eigene Rezepte, Schema v3
+7. **Phase 3E**: Open Food Facts + Barcode-Scanner
    - Produktsuche nach Name oder Barcode-Scan
    - Leucin-Schätzung aus Produktkategorie verfeinern (bessere Basis als nur Proteinmenge)
    - `leucineEstimateG`, `mpsTriggered` in TrackedFood befüllen (SCHEMA_VERSION bleibt 2 — optionale Felder)
@@ -237,4 +242,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-04 · APP_VERSION 1.2.7 · SCHEMA_VERSION 2*
+*Zuletzt aktualisiert: 2026-06-04 · APP_VERSION 1.3.0 · SCHEMA_VERSION 3 · Phase 4 abgeschlossen*
