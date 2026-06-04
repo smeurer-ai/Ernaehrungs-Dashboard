@@ -11,6 +11,8 @@ import {
   getWeeksByYear,
   saveLogEntry,
   saveWeek,
+  getAllCustomRecipes,
+  saveCustomRecipe,
 } from './indexeddb.js';
 import { APP_VERSION, SCHEMA_VERSION } from '../version.js';
 
@@ -35,6 +37,8 @@ export async function exportAll() {
   const log = [];
   const week = [];
 
+  const recipesCustom = await getAllCustomRecipes();
+
   const exportData = {
     exportedAt: Date.now(),
     appVersion: APP_VERSION,
@@ -45,6 +49,7 @@ export async function exportAll() {
       uiState,
       log,
       week,
+      recipesCustom,
     },
   };
 
@@ -138,6 +143,13 @@ export async function importAll(file, options = { mode: 'replace' }) {
     if (Array.isArray(data.week) && data.week.length > 0) {
       for (const entry of data.week) {
         await saveWeek(entry);
+      }
+    }
+
+    // recipesCustom nach IndexedDB schreiben
+    if (Array.isArray(data.recipesCustom) && data.recipesCustom.length > 0) {
+      for (const recipe of data.recipesCustom) {
+        await saveCustomRecipe(recipe);
       }
     }
 
