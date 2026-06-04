@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
-**Zuletzt aktualisiert:** 2026-06-03  
-**Stand:** Phase 3A + 3B + 3C + 3D + CDN-Vendoring/CSP abgeschlossen · Phase 3E als nächstes  
+**Zuletzt aktualisiert:** 2026-06-04  
+**Stand:** Phase 3A + 3B + 3C + 3D + CDN-Vendoring/CSP + Mahlzeitenanker abgeschlossen · Phase 3E als nächstes  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
 **Branch:** `master` · Letzter Push: `9e2acd8`  
-**APP_VERSION:** `1.2.5` · **SCHEMA_VERSION:** `2`
+**APP_VERSION:** `1.2.6` · **SCHEMA_VERSION:** `2`
 
 ---
 
@@ -20,7 +20,8 @@
 | **Phase 3B — Tagesbilanz** | ✅ | Ist-Werte aus Log summieren, DaySummary gefüllt, Protein je Slot in MealPlanEntry |
 | **Phase 3C — MPS-Vorbereitung** | ✅ | `rateMealProtein()` echte Logik, `isMainMealSlot()`, Leucin-Badge im Tracker |
 | **Phase 3D — Hydration-Karte** | ✅ | HydrationCard im Heute-Tab — zeitbasiert abgeblendet/hervorgehoben |
-| **CDN-Vendoring + CSP-Härtung** | ✅ | Keine externen JS-CDNs mehr; React/htm/idb lokal unter `assets/vendor/`; Google Fonts lokal unter `assets/fonts/`; CSP auf `script-src 'self'` verschärft; SW cached nur noch lokale Assets; 112 Tests grün |
+| **CDN-Vendoring + CSP-Härtung** | ✅ | Keine externen JS-CDNs mehr; React/htm/idb lokal unter `assets/vendor/`; Google Fonts lokal unter `assets/fonts/`; CSP auf `script-src 'self'` verschärft; SW cached nur noch lokale Assets |
+| **Mahlzeitenanker flexibilisiert** | ✅ | `wakeUpTime` + `trainingDurationMin` im Profil; Frühstück = wakeUpTime + 60 Min; Post-Workout = T + Dauer + 30 Min; Frühstück bei Mittvormittags-Training wieder sichtbar; 150 Tests grün |
 | **Phase 3E — OFD + Barcode** | ⏳ | Open Food Facts, Barcode-Scanner |
 | **Phase 4 — Rezepte** | ⏳ | Rezeptdatenbank mit Schritten, eigene Rezepte |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
@@ -154,12 +155,13 @@ Bei neuen IndexedDB-Stores:
 ```
 tests/unit/calc/bmr.test.js                10 Tests
 tests/unit/calc/macros.test.js             23 Tests
-tests/unit/calc/nutritionLogic.test.js     36 Tests
+tests/unit/calc/nutritionLogic.test.js     38 Tests
 tests/unit/calc/hydration.test.js          24 Tests
 tests/unit/calc/tracker.test.js            15 Tests
+tests/unit/calc/mealTemplates.test.js      36 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin)
 tests/unit/security/htmlSecurity.test.js    4 Tests  (CDN-Blocklist + CSP-Härtung)
 ──────────────────────────────────────────────────
-Gesamt                                    112 Tests — alle grün
+Gesamt                                    150 Tests — alle grün
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -186,10 +188,7 @@ Ausführen: `npm test` im Projekt-Root.
 2. ~~**Phase 3B**~~ ✅ erledigt
 3. ~~**Phase 3C**~~ ✅ erledigt
 4. ~~**CDN-Vendoring + CSP**~~ ✅ erledigt (v1.2.5, Push `9e2acd8`)
-5. **Offene uncommitted Änderungen vor Phase 4 klären:**
-   - `js/calc/macros.js` + `js/calc/nutritionLogic.js` + `tests/unit/calc/macros.test.js` — Bugfixes (defensiver Fallback, tdee-Guard)
-   - `docs/phase-3c-abschlussbericht.md` + `docs/uebergabedokument-aktuell.md` — Doku-Updates
-   - Diese separat committen oder bewusst verwerfen, bevor Phase 4 startet
+5. ~~**Mahlzeitenanker flexibilisiert**~~ ✅ erledigt (v1.2.6)
 6. **Phase 3E**: Open Food Facts + Barcode-Scanner
    - Produktsuche nach Name oder Barcode-Scan
    - Leucin-Schätzung aus Produktkategorie verfeinern (bessere Basis als nur Proteinmenge)
@@ -212,6 +211,7 @@ Ausführen: `npm test` im Projekt-Root.
 | `docs/phase-2-abschlussbericht.md` | Phase-2-Abschlussbericht |
 | `docs/phase-3a-abschlussbericht.md` | Phase-3A-Abschlussbericht |
 | `docs/phase-3c-abschlussbericht.md` | Phase-3C-Abschlussbericht |
+| `docs/vor-phase-4-mahlzeitenanker.md` | Mahlzeitenanker-Entscheidungen vor Phase 4 |
 | `docs/uebergabedokument-aktuell.md` | **Dieses Dokument** |
 | `docs/superpowers/plans/` | Alle Implementierungspläne |
 | `docs/superpowers/specs/` | Alle Design-Specs |
@@ -220,4 +220,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-03 · APP_VERSION 1.2.5 · SCHEMA_VERSION 2 · Commit 9e2acd8*
+*Zuletzt aktualisiert: 2026-06-04 · APP_VERSION 1.2.6 · SCHEMA_VERSION 2*

@@ -14,7 +14,7 @@ import { FoodEntryModal } from './FoodEntryModal.js';
  *   trainingTime: string,
  * }} props
  */
-export function TrackerTab({ dayType, trainingTime }) {
+export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDurationMin }) {
   const today = new Date().toISOString().slice(0, 10);
   const dayMeta = { dayType, trainingTime };
 
@@ -27,9 +27,9 @@ export function TrackerTab({ dayType, trainingTime }) {
 
   // Mahlzeit-Slots aus aktuellem Tagesplan (dynamisch via getMealTemplate)
   const mealSlots = useMemo(() => {
-    const meals = getMealTemplate(dayType, trainingTime);
+    const meals = getMealTemplate(dayType, trainingTime, wakeUpTime, trainingDurationMin);
     return meals.map(m => m.label);
-  }, [dayType, trainingTime]);
+  }, [dayType, trainingTime, wakeUpTime, trainingDurationMin]);
 
   function openAddModal(slot) {
     setEditEntry(null);

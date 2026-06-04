@@ -31,6 +31,8 @@ export function ProfileEditor({ profile, calculated, onSave }) {
   const [form, setForm] = useState({
     ...profile,
     fatPercent: Math.round((profile.fatPercent || 0.25) * 100),
+    wakeUpTime: profile.wakeUpTime || '07:00',
+    trainingDurationMin: profile.trainingDurationMin || 60,
   });
   const [dirty, setDirty] = useState(false);
 
@@ -77,6 +79,8 @@ export function ProfileEditor({ profile, calculated, onSave }) {
       restFactor: Number(form.restFactor) || 1.35,
       fatPercent: (Number(form.fatPercent) || 25) / 100,  // Prozent → Dezimal speichern
       strengthTrainingDaysPerWeek: Number(form.strengthTrainingDaysPerWeek) || 3,
+      wakeUpTime: form.wakeUpTime || '07:00',
+      trainingDurationMin: Number(form.trainingDurationMin) || 60,
       leanMass: calcLeanMass(Number(form.weight), Number(form.bodyFat)),
     };
     onSave(p);
@@ -151,6 +155,17 @@ export function ProfileEditor({ profile, calculated, onSave }) {
       <${Field} label="PAL Trainingstag" field="trainingFactor" min="1.2" max="2.0" step="0.05" form=${form} update=${update} />
       <${Field} label="PAL Ruhetag" field="restFactor" min="1.2" max="2.0" step="0.05" form=${form} update=${update} />
       <${Field} label="Krafttraining-Tage/Woche" field="strengthTrainingDaysPerWeek" min="0" max="7" form=${form} update=${update} />
+
+      <div style=${{ marginBottom: '12px' }}>
+        <label style=${S.label}>Aufwachzeit</label>
+        <input
+          type="time"
+          value=${form.wakeUpTime || '07:00'}
+          onChange=${e => update('wakeUpTime', e.target.value)}
+          style=${S.input}
+        />
+      </div>
+      <${Field} label="Trainingsdauer" field="trainingDurationMin" suffix="Min" min="20" max="180" step="5" form=${form} update=${update} />
 
       ${preview && html`
         <div style=${{ background: '#0d0d0d', borderRadius: '8px', padding: '12px', marginBottom: '14px', border: '1px solid #1e1e1e' }}>

@@ -3,8 +3,8 @@ import { MealPlanEntry } from './MealPlanEntry.js';
 import { getMealTemplate } from '../../data/mealTemplates.js';
 import { distributeMacrosPerMeal } from '../../calc/macros.js';
 
-export function MealPlanList({ dayType, trainingTime, macros, consumedBySlot }) {
-  const template = getMealTemplate(dayType, trainingTime);
+export function MealPlanList({ dayType, trainingTime, macros, consumedBySlot, wakeUpTime, trainingDurationMin }) {
+  const template = getMealTemplate(dayType, trainingTime, wakeUpTime, trainingDurationMin);
   const meals = distributeMacrosPerMeal(template, macros);
 
   return html`

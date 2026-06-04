@@ -11,6 +11,8 @@ import { S, COLORS } from '../../ui/theme.js';
 export function HeuteTab({ profile, calculated }) {
   const [uiState, updateUiState] = useUiState();
   const { preferredDayType: dayType, preferredTrainingTime: trainingTime } = uiState;
+  const wakeUpTime = profile?.wakeUpTime;
+  const trainingDurationMin = profile?.trainingDurationMin;
 
   const today = new Date().toISOString().split('T')[0];
   const { entries, loading } = useLog(today, { dayType, trainingTime });
@@ -39,7 +41,7 @@ export function HeuteTab({ profile, calculated }) {
       />
       <${DaySummary} macros=${macros} consumed=${consumed} />
       <div style=${S.cardTitle}>Mahlzeitenplan</div>
-      <${MealPlanList} dayType=${dayType} trainingTime=${trainingTime} macros=${macros} consumedBySlot=${consumedBySlot} />
+      <${MealPlanList} dayType=${dayType} trainingTime=${trainingTime} macros=${macros} consumedBySlot=${consumedBySlot} wakeUpTime=${wakeUpTime} trainingDurationMin=${trainingDurationMin} />
       <${HydrationCard} dayType=${dayType} trainingTime=${trainingTime} />
     </div>
   `;

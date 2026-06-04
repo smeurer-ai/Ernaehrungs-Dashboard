@@ -70,14 +70,14 @@ export const REST_MEALS = [
  * @param {string} trainingTimeStr - z.B. "10:30" (beliebige HH:MM Zeit)
  * @returns {Array} 4 Mahlzeit-Objekte
  */
-export function generateTrainingDayMeals(trainingTimeStr) {
+export function generateTrainingDayMeals(trainingTimeStr, wakeUpTime = '07:00', trainingDurationMin = 60) {
   const T    = clamp(toMin(trainingTimeStr), 5 * 60, 22 * 60);
-  const pre  = clamp(T - 75, 5 * 60, 22 * 60);  // 1h15 vor Training
-  const post = clamp(T + 90, 6 * 60, 23 * 60);  // 1h30 nach Trainingsstart (Trainingsende + Fahrt/Prep)
+  const pre  = clamp(T - 75, 5 * 60, 22 * 60);
+  const post = clamp(T + trainingDurationMin + 30, 6 * 60, 23 * 60);
 
-  const BREAKFAST = 8 * 60;           // 08:00 feste Frühstückszeit
-  const EARLY_CUTOFF     = 10.5 * 60; // 10:30 — Grenze Frühtraining
-  const AFTERNOON_CUTOFF = 13.0 * 60; // 13:00 — Grenze Spättraining
+  const BREAKFAST        = clamp(toMin(wakeUpTime) + 60, 5 * 60, 11 * 60); // wakeUp + 60 Min
+  const EARLY_CUTOFF     = BREAKFAST + 90; // Frühtraining wenn Pre < BREAKFAST + 90
+  const AFTERNOON_CUTOFF = 13.0 * 60;     // 13:00 — Grenze Spättraining
 
   // ── Frühtraining (Pre < 10:30): Pre → Post → Mittagessen → Abendessen ──
   // k=.22+.30+.28+.20=1.00  p=.22+.30+.26+.22=1.00  c=.28+.38+.24+.10=1.00  f=.12+.18+.35+.35=1.00 ✓
@@ -128,7 +128,7 @@ export const MEAL_TEMPLATES = { rest: REST_MEALS };
  * @param {string} trainingTime  - "HH:MM", beliebige Zeit
  * @returns {Array} 4 Mahlzeit-Objekte
  */
-export function getMealTemplate(dayType, trainingTime) {
+export function getMealTemplate(dayType, trainingTime, wakeUpTime, trainingDurationMin) {
   if (dayType === 'rest') return REST_MEALS;
-  return generateTrainingDayMeals(trainingTime || '08:00');
+  return generateTrainingDayMeals(trainingTime || '08:00', wakeUpTime, trainingDurationMin);
 }
