@@ -3,6 +3,7 @@ import { DayTypeSwitch } from './DayTypeSwitch.js';
 import { DaySummary } from './DaySummary.js';
 import { MealPlanList } from './MealPlanList.js';
 import { HydrationCard } from './HydrationCard.js';
+import { MpsSummaryCard } from './MpsSummaryCard.js';
 import { useUiState } from '../../hooks/useUiState.js';
 import { useLog } from '../../hooks/useLog.js';
 import { sumConsumed, groupProteinBySlot } from '../../calc/tracker.js';
@@ -55,6 +56,13 @@ export function HeuteTab({ profile, calculated }) {
         trainingDurationMin=${effectiveDurationMin}
       />
       <${HydrationCard} dayType=${dayType} trainingTime=${trainingTime} />
+      <${MpsSummaryCard}
+        entries=${entries}
+        dayType=${dayType}
+        trainingTime=${trainingTime}
+        wakeUpTime=${wakeUpTime}
+        trainingDurationMin=${effectiveDurationMin}
+      />
     </div>
   `;
 }

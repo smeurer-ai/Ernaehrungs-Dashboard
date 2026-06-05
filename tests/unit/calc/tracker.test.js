@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcTrackedFoodMacros, sumConsumed, groupProteinBySlot } from '../../../js/calc/tracker.js';
+import { calcTrackedFoodMacros, sumConsumed, groupProteinBySlot, computeMpsSummary } from '../../../js/calc/tracker.js';
 
 // Referenz-Lebensmittel für Tests
 const QUARK        = { kcal100: 72,  p100: 12,  c100: 4,  f100: 0.2 };
@@ -124,5 +124,52 @@ describe('groupProteinBySlot', () => {
       'Abendessen':  35,
       'Sonstiges':   8,
     });
+  });
+});
+
+describe('computeMpsSummary', () => {
+  const SLOTS = ['Frühstück', 'Mittagessen', 'Snack'];
+
+  it('gibt 0/0 zurück wenn keine Einträge vorhanden', () => {
+    const r = computeMpsSummary([], SLOTS);
+    expect(r.mpsSlotsCount).toBe(0);
+    expect(r.totalActiveSlotsCount).toBe(0);
+  });
+
+  it('zählt nur Slots mit mindestens einem Eintrag', () => {
+    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 35, kcal: 300, c: 20, f: 10 }];
+    const r = computeMpsSummary(entries, SLOTS);
+    expect(r.totalActiveSlotsCount).toBe(1);
+  });
+
+  it('Slot ist MPS-wirksam wenn mpsTriggered=true explizit gesetzt', () => {
+    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 5, kcal: 80, c: 5, f: 2, mpsTriggered: true }];
+    const r = computeMpsSummary(entries, SLOTS);
+    expect(r.mpsSlotsCount).toBe(1);
+  });
+
+  it('Slot ist NICHT MPS-wirksam wenn mpsTriggered=false explizit gesetzt (trotz hoher Proteinmenge)', () => {
+    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 50, kcal: 400, c: 30, f: 15, mpsTriggered: false }];
+    const r = computeMpsSummary(entries, SLOTS);
+    expect(r.mpsSlotsCount).toBe(0);
+  });
+
+  it('Fallback auf Protein-Schätzung wenn kein mpsTriggered: 35g in Hauptmahlzeit → wirksam', () => {
+    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 35, kcal: 300, c: 20, f: 10 }];
+    const r = computeMpsSummary(entries, SLOTS);
+    expect(r.mpsSlotsCount).toBe(1);
+  });
+
+  it('Snack-Slot: 15g Protein → wirksam (niedrigere Schwelle)', () => {
+    const entries = [{ id: '1', mealSlot: 'Snack', p: 15, kcal: 150, c: 8, f: 5 }];
+    const r = computeMpsSummary(entries, SLOTS);
+    expect(r.mpsSlotsCount).toBe(1);
+  });
+
+  it('Snack-Slot: 8g Protein → nicht wirksam', () => {
+    const entries = [{ id: '1', mealSlot: 'Snack', p: 8, kcal: 80, c: 5, f: 2 }];
+    const r = computeMpsSummary(entries, SLOTS);
+    expect(r.mpsSlotsCount).toBe(0);
+    expect(r.totalActiveSlotsCount).toBe(1);
   });
 });

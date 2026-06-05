@@ -1,0 +1,114 @@
+import { describe, it, expect } from 'vitest';
+import { mapOFFProduct, parseOFFSearchResults } from '../../../js/api/openFoodFacts.js';
+
+describe('mapOFFProduct', () => {
+  it('mappt deutsche Produktbezeichnung bevorzugt', () => {
+    const product = {
+      code: '3017620425035',
+      product_name: 'Nutella',
+      product_name_de: 'Nutella Brotaufstrich',
+      brands: 'Ferrero',
+      nutriments: {
+        'energy-kcal_100g': 539,
+        'proteins_100g': 6.3,
+        'carbohydrates_100g': 57.5,
+        'fat_100g': 30.9,
+      },
+      categories_tags: ['en:sweet-spreads', 'en:chocolate-spreads'],
+    };
+    const r = mapOFFProduct(product);
+    expect(r.name).toBe('Nutella Brotaufstrich');
+    expect(r.kcal100).toBe(539);
+    expect(r.p100).toBe(6.3);
+    expect(r.c100).toBe(57.5);
+    expect(r.f100).toBe(30.9);
+    expect(r.offCode).toBe('3017620425035');
+    expect(r.source).toBe('off');
+    expect(r.categoriesTags).toEqual(['en:sweet-spreads', 'en:chocolate-spreads']);
+  });
+
+  it('fällt auf product_name zurück wenn kein product_name_de', () => {
+    const product = {
+      product_name: 'Magerquark',
+      nutriments: { 'energy-kcal_100g': 72, 'proteins_100g': 12, 'carbohydrates_100g': 4, 'fat_100g': 0.2 },
+      categories_tags: [],
+    };
+    expect(mapOFFProduct(product).name).toBe('Magerquark');
+  });
+
+  it('gibt Fallback-Name für Produkte ohne Namen', () => {
+    const product = { nutriments: {}, categories_tags: [] };
+    expect(mapOFFProduct(product).name).toBe('Unbekanntes Produkt');
+  });
+
+  it('behandelt fehlende nutriments ohne Fehler', () => {
+    const product = { product_name: 'Test', categories_tags: [] };
+    const r = mapOFFProduct(product);
+    expect(r.kcal100).toBe(0);
+    expect(r.p100).toBe(0);
+    expect(r.c100).toBe(0);
+    expect(r.f100).toBe(0);
+  });
+
+  it('rundet kcal ganzzahlig', () => {
+    const product = {
+      product_name: 'Test',
+      nutriments: { 'energy-kcal_100g': 72.6, 'proteins_100g': 12, 'carbohydrates_100g': 4, 'fat_100g': 0.2 },
+      categories_tags: [],
+    };
+    expect(mapOFFProduct(product).kcal100).toBe(73);
+  });
+
+  it('rundet Makros auf 1 Dezimalstelle', () => {
+    const product = {
+      product_name: 'Test',
+      nutriments: { 'energy-kcal_100g': 100, 'proteins_100g': 12.34, 'carbohydrates_100g': 5.67, 'fat_100g': 2.15 },
+      categories_tags: [],
+    };
+    const r = mapOFFProduct(product);
+    expect(r.p100).toBe(12.3);
+    expect(r.c100).toBe(5.7);
+    expect(r.f100).toBe(2.2);
+  });
+
+  it('füllt leeres categoriesTags-Array wenn categories_tags fehlt', () => {
+    const product = { product_name: 'Test', nutriments: {} };
+    expect(mapOFFProduct(product).categoriesTags).toEqual([]);
+  });
+});
+
+describe('parseOFFSearchResults', () => {
+  it('gibt leeres Array für leere Produktliste', () => {
+    expect(parseOFFSearchResults({ products: [] })).toEqual([]);
+  });
+
+  it('gibt leeres Array für null oder fehlende products', () => {
+    expect(parseOFFSearchResults(null)).toEqual([]);
+    expect(parseOFFSearchResults({})).toEqual([]);
+    expect(parseOFFSearchResults({ products: null })).toEqual([]);
+  });
+
+  it('filtert Produkte ohne Namen heraus', () => {
+    const json = {
+      products: [
+        { product_name: 'Mit Name', nutriments: { 'energy-kcal_100g': 100, 'proteins_100g': 5 }, categories_tags: [] },
+        { nutriments: { 'energy-kcal_100g': 50 }, categories_tags: [] },
+      ],
+    };
+    const r = parseOFFSearchResults(json);
+    expect(r).toHaveLength(1);
+    expect(r[0].name).toBe('Mit Name');
+  });
+
+  it('filtert Produkte ohne Nährstoffwerte heraus', () => {
+    const json = {
+      products: [
+        { product_name: 'Mit Nährwerten', nutriments: { 'energy-kcal_100g': 100, 'proteins_100g': 5 }, categories_tags: [] },
+        { product_name: 'Ohne Nährwerte', nutriments: {}, categories_tags: [] },
+      ],
+    };
+    const r = parseOFFSearchResults(json);
+    expect(r).toHaveLength(1);
+    expect(r[0].name).toBe('Mit Nährwerten');
+  });
+});
