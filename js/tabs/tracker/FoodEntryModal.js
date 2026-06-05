@@ -2,7 +2,10 @@ import { html, useState, useEffect, useMemo } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { Modal } from '../../ui/Modal.js';
 import { FavoritePicker } from './FavoritePicker.js';
+import { OFFSearchPanel } from './OFFSearchPanel.js';
+import { BarcodePanel } from './BarcodePanel.js';
 import { calcTrackedFoodMacros } from '../../calc/tracker.js';
+import { computeMpsFields } from '../../calc/leucineFactors.js';
 
 /** Generiert eine einfache, eindeutige ID */
 function generateId() {
@@ -49,6 +52,8 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
   const [c100, setC100] = useState('');
   const [f100, setF100] = useState('');
   const [saveFav, setSaveFav] = useState(false);
+  const [searchMode, setSearchMode] = useState(null); // null | 'search' | 'barcode'
+  const [offData, setOffData] = useState(null);        // { categoriesTags, offCode } | null
 
   // Formular zurücksetzen / mit initialEntry befüllen wenn Modal geöffnet wird.
   // Im Edit-Modus: Per-100g-Werte aus vorhandenem Eintrag zurückrechnen
@@ -81,6 +86,8 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
       setC100('');
       setF100('');
       setSaveFav(false);
+      setSearchMode(null);
+      setOffData(null);
     }
   }, [open, initialEntry, defaultSlot, mealSlots]);
 
@@ -90,6 +97,17 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
     setP100(String(fav.p100));
     setC100(String(fav.c100));
     setF100(String(fav.f100));
+    setSaveFav(false);
+    setOffData(null);
+  };
+
+  const handleOFFSelect = (product) => {
+    setName(product.name);
+    setKcal100(String(product.kcal100));
+    setP100(String(product.p100));
+    setC100(String(product.c100));
+    setF100(String(product.f100));
+    setOffData({ categoriesTags: product.categoriesTags, offCode: product.offCode });
     setSaveFav(false);
   };
 
@@ -116,7 +134,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
       id: initialEntry?.id ?? generateId(),
       mealSlot: slot,
       foodName: name.trim(),
-      foodRef: 'manual',
+      foodRef: offData ? `off:${offData.offCode || 'search'}` : 'manual',
       gramm: parseFloat(gramm),
       kcal: preview.kcal,
       p: preview.p,
@@ -124,6 +142,13 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
       f: preview.f,
       timestamp: initialEntry?.timestamp ?? Date.now(),
     };
+
+    if (offData) {
+      const { leucineEstimateG, proteinQualityScore, mpsTriggered } = computeMpsFields(preview.p, offData.categoriesTags);
+      entry.leucineEstimateG = leucineEstimateG;
+      entry.proteinQualityScore = proteinQualityScore;
+      entry.mpsTriggered = mpsTriggered;
+    }
 
     const favData = saveFav ? {
       id: generateId(),
@@ -163,12 +188,49 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
         ${!isEdit && html`
           <label style=${{ ...S.label, marginBottom: '6px' }}>Aus Favoriten</label>
           <${FavoritePicker} favorites=${favorites} onSelect=${handleFavSelect} />
+
+          <div style=${{ display: 'flex', gap: '6px', margin: '10px 0 8px' }}>
+            <button
+              onClick=${() => setSearchMode(searchMode === 'search' ? null : 'search')}
+              style=${{
+                ...S.btn(searchMode === 'search' ? COLORS.gold : '#1e1e1e', searchMode === 'search' ? '#111' : COLORS.textMuted),
+                flex: 1,
+                fontSize: '11px',
+              }}
+            >🔍 OFD Suche</button>
+            <button
+              onClick=${() => setSearchMode(searchMode === 'barcode' ? null : 'barcode')}
+              style=${{
+                ...S.btn(searchMode === 'barcode' ? COLORS.gold : '#1e1e1e', searchMode === 'barcode' ? '#111' : COLORS.textMuted),
+                flex: 1,
+                fontSize: '11px',
+              }}
+            >🔢 Barcode</button>
+          </div>
+
+          ${searchMode === 'search' && html`
+            <${OFFSearchPanel} onSelect=${handleOFFSelect} onClose=${() => setSearchMode(null)} />
+          `}
+          ${searchMode === 'barcode' && html`
+            <${BarcodePanel} onSelect=${handleOFFSelect} onClose=${() => setSearchMode(null)} />
+          `}
+
+          ${offData && html`
+            <div style=${{
+              fontSize: '10px', color: '#5cb85c', fontFamily: FONTS.mono,
+              marginBottom: '8px', padding: '4px 8px', background: '#1a2a1a',
+              borderRadius: '6px', border: '1px solid #2a3a2a',
+            }}>
+              ✓ OFD-Produkt · Leucin wird automatisch berechnet
+            </div>
+          `}
+
           <div style=${{
             textAlign: 'center',
             fontSize: '10px',
             color: COLORS.textMuted,
             fontFamily: FONTS.mono,
-            margin: '10px 0 12px',
+            margin: '6px 0 12px',
             letterSpacing: '0.08em',
           }}>— oder manuell eingeben —</div>
         `}
