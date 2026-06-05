@@ -5,6 +5,8 @@
  * @module calc/tracker
  */
 
+import { isMainMealSlot, rateMealProtein } from './nutritionLogic.js';
+
 /**
  * Berechnet die Makronährstoffe eines Lebensmitteleintrags.
  *
@@ -60,4 +62,41 @@ export function calcTrackedFoodMacros(food, gramm) {
     c:    Math.round(food.c100 * factor * 10) / 10,
     f:    Math.round(food.f100 * factor * 10) / 10,
   };
+}
+
+/**
+ * Berechnet die MPS-Tages-Zusammenfassung aus den Tracker-Einträgen.
+ *
+ * Logik pro Slot:
+ * 1. Wenn mindestens ein Eintrag `mpsTriggered` definiert hat → verwende diese OFD-Daten
+ * 2. Fallback: schätze via rateMealProtein aus der Slot-Protein-Summe
+ *
+ * @param {Array<{mealSlot?: string, p?: number, mpsTriggered?: boolean}>} entries
+ * @param {string[]} mealSlots - Sortierte Liste der Mahlzeit-Slots des Tages
+ * @returns {{ mpsSlotsCount: number, totalActiveSlotsCount: number }}
+ */
+export function computeMpsSummary(entries, mealSlots) {
+  const slotTotals = groupProteinBySlot(entries);
+  let totalActiveSlotsCount = 0;
+  let mpsSlotsCount = 0;
+
+  for (const slot of mealSlots) {
+    const slotEntries = entries.filter(e => e.mealSlot === slot);
+    if (slotEntries.length === 0) continue;
+    totalActiveSlotsCount++;
+
+    const offEntries = slotEntries.filter(e => e.mpsTriggered !== undefined);
+    if (offEntries.length > 0) {
+      // OFD-Daten vorhanden → explizites mpsTriggered verwenden
+      if (offEntries.some(e => e.mpsTriggered === true)) mpsSlotsCount++;
+      continue;
+    }
+
+    // Kein OFD-Eintrag → Protein-Schätzung
+    const protein = slotTotals[slot] ?? 0;
+    const { rating } = rateMealProtein(protein, isMainMealSlot(slot), {});
+    if (rating === 'good') mpsSlotsCount++;
+  }
+
+  return { mpsSlotsCount, totalActiveSlotsCount };
 }
