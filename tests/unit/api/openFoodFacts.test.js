@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapOFFProduct, parseOFFSearchResults } from '../../../js/api/openFoodFacts.js';
+import { mapOFFProduct, normalizeBarcode, parseOFFSearchResults } from '../../../js/api/openFoodFacts.js';
 
 describe('mapOFFProduct', () => {
   it('mappt deutsche Produktbezeichnung bevorzugt', () => {
@@ -110,5 +110,15 @@ describe('parseOFFSearchResults', () => {
     const r = parseOFFSearchResults(json);
     expect(r).toHaveLength(1);
     expect(r[0].name).toBe('Mit Nährwerten');
+  });
+});
+
+describe('normalizeBarcode', () => {
+  it('entfernt Leerzeichen und Bindestriche aus Barcode-Eingaben', () => {
+    expect(normalizeBarcode('3017 6204-25035')).toBe('3017620425035');
+  });
+
+  it('entfernt Scan-Artefakte und behält nur Ziffern', () => {
+    expect(normalizeBarcode('EAN: 400-8400 402225')).toBe('4008400402225');
   });
 });

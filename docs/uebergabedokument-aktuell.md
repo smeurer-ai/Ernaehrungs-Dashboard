@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
-**Zuletzt aktualisiert:** 2026-06-05  
+**Zuletzt aktualisiert:** 2026-06-06
 **Stand:** Phase 3E Open Food Facts abgeschlossen · Phase 5 als nächstes  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `codex/phase-3e-open-food-facts` · Merge nach master ausstehend  
-**APP_VERSION:** `1.3.1` · **SCHEMA_VERSION:** `3`
+**Branch:** `master` · Phase 3E gemerged
+**APP_VERSION:** `1.3.2` · **SCHEMA_VERSION:** `3`
 
 ---
 
@@ -24,7 +24,7 @@
 | **Mahlzeitenanker flexibilisiert** | ✅ | `wakeUpTime` + `trainingDurationMin` im Profil; Frühstück = wakeUpTime + 60 Min; Post-Workout = T + Dauer + 30 Min; Frühstück bei Mittvormittags-Training wieder sichtbar |
 | **Trainingsdauer pro Tag wählbar** | ✅ | Dropdown „Trainingsdauer heute" (45–120 Min) im Heute-Tab; Tagesauswahl überschreibt Profil-Default; Vorschau + Mahlzeitenplan + Tracker synchron |
 | **Phase 4 — Rezepte** | ✅ | 8 Initialrezepte mit Zutaten/Schritten; expandierbare Karten; eigene Rezepte anlegen/bearbeiten/löschen; Schema v3 (recipesCustom + recipePhotos); Export/Import |
-| **Phase 3E — OFD + Barcode** | ✅ | OFD-Suche + Barcode-Scanner, Leucin-Schätzung aus Produktkategorie, MPS-Tagesübersicht (v1.3.1) |
+| **Phase 3E — OFD + Barcode** | ✅ | OFD-Suche + Barcode-Scanner, Leucin-Schätzung aus Produktkategorie, MPS-Tagesübersicht (v1.3.1); Barcode-UX-Fix (v1.3.2) |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung |
 
@@ -160,7 +160,7 @@ Bei neuen IndexedDB-Stores:
 | Leucin-Schätzung | Dynamisch berechnet aus `p` + `isMainMealSlot()`, nie persistiert (Phase 3C) |
 | Leucin-Felder TrackedFood | `leucineEstimateG?`, `proteinQualityScore?`, `mpsTriggered?` — befüllt bei OFD-Produkten (Phase 3E) |
 | OFD-Suche CSP | `connect-src 'self' https://world.openfoodfacts.org` — in ernaehrung.html Zeile 10 |
-| Barcode-Kamera | Native BarcodeDetector-API (kein externes Library) — guard: `'BarcodeDetector' in window` |
+| Barcode-Kamera | Native BarcodeDetector-API (kein externes Library) — guard: `BarcodeDetector` + `mediaDevices`; manueller Barcode-Fallback immer sichtbar |
 | computeMpsSummary Priorität | Explizites `mpsTriggered` (OFD-Daten) hat Vorrang vor Protein-Schätzung via `rateMealProtein` |
 | `isMainMealSlot()` | Substring-Matching (`toLowerCase().includes()`), nicht exakte Set-Prüfung — robust für neue Slot-Namen |
 | `rateMealProtein()` Schwellen | Hauptmahlzeit: 30/20g · Snack: 15/10g · Basis: 3g Leucin ≈ 30g hochwertiges Protein |
@@ -177,7 +177,7 @@ tests/unit/calc/bmr.test.js                10 Tests
 tests/unit/calc/macros.test.js             23 Tests
 tests/unit/calc/nutritionLogic.test.js     38 Tests
 tests/unit/calc/hydration.test.js          24 Tests
-tests/unit/calc/tracker.test.js            15 Tests
+tests/unit/calc/tracker.test.js            22 Tests  (inkl. computeMpsSummary)
 tests/unit/calc/mealTemplates.test.js      39 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin, null-Fallbacks)
 tests/unit/security/htmlSecurity.test.js    4 Tests  (CDN-Blocklist + CSP-Härtung)
 tests/unit/storage/migrations.test.js       5 Tests  (Schema v3 Migration)
@@ -185,9 +185,9 @@ tests/unit/storage/indexeddb.test.js        8 Tests  (CRUD recipesCustom — sav
 tests/unit/storage/exportImport.test.js     4 Tests  (recipesCustom Export/Import + Altdaten-Robustheit)
 tests/unit/data/initialRecipes.test.js      8 Tests  (Struktur aller 8 Rezepte)
 tests/unit/calc/leucineFactors.test.js     18 Tests  (Phase 3E: estimateLeucineFactor, computeMpsFields)
-tests/unit/api/openFoodFacts.test.js       11 Tests  (Phase 3E: mapOFFProduct, parseOFFSearchResults)
+tests/unit/api/openFoodFacts.test.js       13 Tests  (Phase 3E: mapOFFProduct, parseOFFSearchResults, normalizeBarcode)
 ──────────────────────────────────────────────────
-Gesamt                                    214 Tests — alle grün  (tracker.test.js +7 computeMpsSummary)
+Gesamt                                    216 Tests — alle grün
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -216,7 +216,7 @@ Ausführen: `npm test` im Projekt-Root.
 4. ~~**CDN-Vendoring + CSP**~~ ✅ erledigt (v1.2.5, Push `9e2acd8`)
 5. ~~**Mahlzeitenanker flexibilisiert**~~ ✅ erledigt (v1.2.6)
 6. ~~**Phase 4 — Rezepte**~~ ✅ erledigt (v1.3.0) — 8 Initialrezepte, eigene Rezepte, Schema v3
-7. ~~**Phase 3E**~~ ✅ erledigt (v1.3.1) — OFD-Suche + Barcode-Scanner, Leucin-Schätzung, MPS-Tagesübersicht
+7. ~~**Phase 3E**~~ ✅ erledigt (v1.3.2) — OFD-Suche + Barcode-Scanner, Leucin-Schätzung, MPS-Tagesübersicht, Barcode-UX-Fix
 8. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge
 
 **Branch-Workflow ab jetzt:**
@@ -244,4 +244,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-04 · APP_VERSION 1.3.0 · SCHEMA_VERSION 3 · Phase 4 abgeschlossen*
+*Zuletzt aktualisiert: 2026-06-06 · APP_VERSION 1.3.2 · SCHEMA_VERSION 3 · Phase 3E abgeschlossen*

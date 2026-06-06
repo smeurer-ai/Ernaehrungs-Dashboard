@@ -8,6 +8,15 @@
 const OFF_FIELDS = 'code,product_name,product_name_de,brands,nutriments,categories_tags';
 
 /**
+ * Entfernt Leerzeichen, Bindestriche und Scan-Artefakte aus Barcode-Eingaben.
+ * @param {string} barcode
+ * @returns {string}
+ */
+export function normalizeBarcode(barcode) {
+  return String(barcode ?? '').replace(/\D/g, '');
+}
+
+/**
  * Mappt ein rohes Open-Food-Facts-Produkt auf das interne Format.
  *
  * @param {Object} product - Rohes OFD-Produkt-Objekt
@@ -79,7 +88,8 @@ export async function searchOFF(query) {
  * @returns {Promise<ReturnType<typeof mapOFFProduct>>}
  */
 export async function fetchOFFByBarcode(barcode) {
-  const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${OFF_FIELDS}`;
+  const normalized = normalizeBarcode(barcode);
+  const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(normalized)}.json?fields=${OFF_FIELDS}`;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`Barcode-Suche fehlgeschlagen: ${resp.status}`);
   const json = await resp.json();

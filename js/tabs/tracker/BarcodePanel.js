@@ -1,10 +1,9 @@
 import { html, useState, useEffect, useRef } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
-import { fetchOFFByBarcode } from '../../api/openFoodFacts.js';
+import { fetchOFFByBarcode, normalizeBarcode } from '../../api/openFoodFacts.js';
 
 /**
  * Barcode-Eingabe-Panel mit optionalem Kamera-Scan via BarcodeDetector-API.
- * Kamera-Button wird nur gezeigt wenn 'BarcodeDetector' in window verfügbar ist.
  *
  * @param {{
  *   onSelect: (product: import('../../api/openFoodFacts.js').OFFProduct) => void,
@@ -21,7 +20,11 @@ export function BarcodePanel({ onSelect, onClose }) {
   const streamRef = useRef(null);
 
   useEffect(() => {
-    setHasBarcodeDetector('BarcodeDetector' in window);
+    const canScan =
+      typeof window !== 'undefined'
+      && 'BarcodeDetector' in window
+      && !!navigator.mediaDevices?.getUserMedia;
+    setHasBarcodeDetector(canScan);
     return () => stopStream();
   }, []);
 
@@ -34,8 +37,12 @@ export function BarcodePanel({ onSelect, onClose }) {
   }
 
   async function handleManualSearch() {
-    const code = barcode.trim();
+    const code = normalizeBarcode(barcode);
     if (!code) return;
+    if (code.length < 8) {
+      setError('Barcode bitte vollständig eingeben.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -50,7 +57,10 @@ export function BarcodePanel({ onSelect, onClose }) {
   }
 
   async function handleStartCamera() {
-    if (!hasBarcodeDetector) return;
+    if (!hasBarcodeDetector) {
+      setError('Kamera-Scan wird von diesem Browser nicht unterstützt. Bitte Barcode manuell eingeben.');
+      return;
+    }
     setError(null);
     let stopped = false;
 
@@ -68,7 +78,7 @@ export function BarcodePanel({ onSelect, onClose }) {
           const found = await detector.detect(videoRef.current);
           if (found.length > 0 && !stopped) {
             stopped = true;
-            const code = found[0].rawValue;
+            const code = normalizeBarcode(found[0].rawValue);
             stream.getTracks().forEach(t => t.stop());
             streamRef.current = null;
             setScanning(false);
@@ -95,6 +105,9 @@ export function BarcodePanel({ onSelect, onClose }) {
     }
   }
 
+  const normalizedBarcode = normalizeBarcode(barcode);
+  const searchDisabled = loading || !normalizedBarcode;
+
   return html`
     <div style=${{ marginBottom: '10px' }}>
       ${scanning && html`
@@ -113,7 +126,7 @@ export function BarcodePanel({ onSelect, onClose }) {
               ...S.btn('#222', COLORS.text),
               padding: '4px 8px', fontSize: '11px',
             }}
-          >✕ Stop</button>
+          >Stop</button>
         </div>
       `}
       <div style=${{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
@@ -125,17 +138,19 @@ export function BarcodePanel({ onSelect, onClose }) {
           onInput=${e => setBarcode(e.target.value)}
           onKeyDown=${e => e.key === 'Enter' && handleManualSearch()}
           style=${{ ...S.input, flex: 1 }}
+          autoFocus
         />
         <button
           onClick=${handleManualSearch}
-          disabled=${loading || !barcode.trim()}
+          disabled=${searchDisabled}
           style=${{
-            ...S.btn(loading || !barcode.trim() ? '#2a2a2a' : COLORS.gold, loading || !barcode.trim() ? '#555' : '#111'),
+            ...S.btn(searchDisabled ? '#2a2a2a' : COLORS.gold, searchDisabled ? '#555' : '#111'),
             padding: '0 14px',
             flexShrink: 0,
+            minWidth: '86px',
           }}
         >
-          ${loading ? '…' : '→'}
+          ${loading ? 'Suche...' : 'Suchen'}
         </button>
       </div>
       ${hasBarcodeDetector && !scanning && html`
@@ -143,8 +158,13 @@ export function BarcodePanel({ onSelect, onClose }) {
           onClick=${handleStartCamera}
           style=${{ ...S.btn('#1a2a1a', '#5cb85c'), width: '100%', marginBottom: '8px', fontSize: '12px' }}
         >
-          📷 Kamera-Scan starten
+          Kamera-Scan starten
         </button>
+      `}
+      ${!hasBarcodeDetector && html`
+        <div style=${{ fontSize: '11px', color: COLORS.textMuted, fontFamily: FONTS.mono, marginBottom: '8px', lineHeight: 1.5 }}>
+          Kamera-Scan ist in diesem Browser nicht verfügbar. Die manuelle Barcode-Eingabe funktioniert weiterhin.
+        </div>
       `}
       ${error && html`
         <div style=${{ fontSize: '11px', color: COLORS.error, fontFamily: FONTS.mono }}>
