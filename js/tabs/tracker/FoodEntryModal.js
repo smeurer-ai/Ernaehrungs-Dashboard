@@ -103,6 +103,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
 
   const handleOFFSelect = (product) => {
     setName(product.name);
+    setGramm(current => current || '100');
     setKcal100(String(product.kcal100));
     setP100(String(product.p100));
     setC100(String(product.c100));
