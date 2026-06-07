@@ -33,6 +33,7 @@ const LOCAL_ASSETS = [
   './js/calc/hydration.js',
   './js/calc/tracker.js',
   './js/calc/leucineFactors.js',
+  './js/calc/favorites.js',
   './js/hooks/useLog.js',
   './js/hooks/useFavoriteFoods.js',
   './js/hooks/useRecipes.js',
