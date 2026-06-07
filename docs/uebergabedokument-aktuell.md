@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
-**Zuletzt aktualisiert:** 2026-06-06
-**Stand:** Phase 3E Open Food Facts abgeschlossen · Phase 5 als nächstes  
+**Zuletzt aktualisiert:** 2026-06-07
+**Stand:** Stabilisierungsrunde nach Phase 3E abgeschlossen · Phase 5 als nächstes  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `master` · Phase 3E gemerged
-**APP_VERSION:** `1.3.2` · **SCHEMA_VERSION:** `3`
+**Branch:** `master` · Stabilisierungsrunde gemerged (PR #4)
+**APP_VERSION:** `1.3.5` · **SCHEMA_VERSION:** `3`
 
 ---
 
@@ -25,6 +25,7 @@
 | **Trainingsdauer pro Tag wählbar** | ✅ | Dropdown „Trainingsdauer heute" (45–120 Min) im Heute-Tab; Tagesauswahl überschreibt Profil-Default; Vorschau + Mahlzeitenplan + Tracker synchron |
 | **Phase 4 — Rezepte** | ✅ | 8 Initialrezepte mit Zutaten/Schritten; expandierbare Karten; eigene Rezepte anlegen/bearbeiten/löschen; Schema v3 (recipesCustom + recipePhotos); Export/Import |
 | **Phase 3E — OFD + Barcode** | ✅ | OFD-Suche + Barcode-Scanner, Leucin-Schätzung aus Produktkategorie, MPS-Tagesübersicht (v1.3.1); Barcode-UX-Fix (v1.3.2) |
+| **Stabilisierungsrunde nach 3E** | ✅ | MPS-Slot-Logik, Makro-Ist/Ziel P/KH/F, OFD-Robustheit, Favoriten-Picker, Favorit im Edit-Modus, Rezepte→Tracker (v1.3.3–1.3.5) |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung |
 
@@ -37,11 +38,12 @@
 - ✅ **Tracker-Tab:** Mahlzeiten manuell eintragen, Favoriten anlegen, Tagesliste, Bearbeiten/Löschen
 - ✅ **MPS-Badge:** Pro Mahlzeit-Slot `~✓ / ~⚠ / ~✗ Leucin` mit ℹ️-Schätzungs-Hinweis (Phase 3C)
 - ✅ **Hydration-Karte:** Trink-Erinnerungen im Heute-Tab (zeitbasiert: vergangen = abgeblendet, nächste = hervorgehoben)
-- ✅ **Tagesbilanz:** KcalRing + MacroBars mit echten Ist-Werten; Protein je Mahlzeit-Slot mit Farbkodierung
-- ✅ **Rezepte-Tab:** 8 Initialrezepte mit Zutaten und Schritten; eigene Rezepte anlegen/bearbeiten/löschen (in IndexedDB); Export/Import inklusive
+- ✅ **Tagesbilanz:** KcalRing + MacroBars mit echten Ist-Werten; P/KH/F je Mahlzeit-Slot mit Farb-Feedback
+- ✅ **Rezepte-Tab:** 8 Initialrezepte + eigene Rezepte; Suchfeld; „In Tracker übernehmen" mit Slot- und Portionswahl; Export/Import
 - ✅ Export/Import JSON, Backup-Erinnerung
-- ✅ **OFD-Suche + Barcode:** Produktsuche nach Name und Barcode im Tracker-Modal; Leucin-Schätzung aus Produktkategorie; MPS-Felder in TrackedFood (`leucineEstimateG`, `proteinQualityScore`, `mpsTriggered`)
-- ✅ **MPS-Tagesübersicht:** „X von Y Mahlzeiten MPS-wirksam" Karte im Heute-Tab mit Farbkodierung
+- ✅ **OFD-Suche + Barcode:** 9s Timeout, 1 Retry, Relevanz-Ranking, differenzierte Fehlermeldungen; Leucin-Schätzung aus Produktkategorie; MPS-Felder in TrackedFood
+- ✅ **MPS-Tagesübersicht:** „X von Y Mahlzeiten MPS-wirksam" (Protein-Baseline; OFD-Leucin nur additiv)
+- ✅ **Favoriten-Picker:** Suchfeld, max 8 Treffer, zuletzt-aktualisiert als Default; „Als Favorit speichern" auch im Edit-Modus mit Duplikat-Check
 
 ---
 
@@ -161,7 +163,11 @@ Bei neuen IndexedDB-Stores:
 | Leucin-Felder TrackedFood | `leucineEstimateG?`, `proteinQualityScore?`, `mpsTriggered?` — befüllt bei OFD-Produkten (Phase 3E) |
 | OFD-Suche CSP | `connect-src 'self' https://world.openfoodfacts.org` — in ernaehrung.html Zeile 10 |
 | Barcode-Kamera | Native BarcodeDetector-API (kein externes Library) — guard: `BarcodeDetector` + `mediaDevices`; manueller Barcode-Fallback immer sichtbar |
-| computeMpsSummary Priorität | Explizites `mpsTriggered` (OFD-Daten) hat Vorrang vor Protein-Schätzung via `rateMealProtein` |
+| computeMpsSummary Priorität | Protein-Schätzung via `rateMealProtein` ist immer die Baseline; OFD-Leucinsumme (≥ 3g/Slot) kann nur verbessern, nie blockieren |
+| groupMacrosBySlot | Ersetzt `groupProteinBySlot`; gibt `{ slot: { p, c, f } }` zurück statt nur Protein-Zahl |
+| Favoriten-Duplikat-Check | `trim().toLowerCase()`-Vergleich in `FoodEntryModal.handleSave` — kein zweiter Favorit wenn Name identisch |
+| Rezept→Tracker gramm | `gramm=100` technischer Platzhalter (kein Gesamtgewicht bekannt); skalierte Makros direkt gespeichert; Einheitensystem folgt |
+| Rezept→Tracker foodRef | `initial-recipe:<id>` für Initialrezepte · `recipe:<id>` für eigene Rezepte |
 | `isMainMealSlot()` | Substring-Matching (`toLowerCase().includes()`), nicht exakte Set-Prüfung — robust für neue Slot-Namen |
 | `rateMealProtein()` Schwellen | Hauptmahlzeit: 30/20g · Snack: 15/10g · Basis: 3g Leucin ≈ 30g hochwertiges Protein |
 | Produktleitfragen | Beide müssen Ja sein: Muskelerhalt/Fettabbau UND MPS im Alltag |
@@ -177,7 +183,9 @@ tests/unit/calc/bmr.test.js                10 Tests
 tests/unit/calc/macros.test.js             23 Tests
 tests/unit/calc/nutritionLogic.test.js     38 Tests
 tests/unit/calc/hydration.test.js          24 Tests
-tests/unit/calc/tracker.test.js            22 Tests  (inkl. computeMpsSummary)
+tests/unit/calc/tracker.test.js            29 Tests  (computeMpsSummary, groupMacrosBySlot — Tasks 1+2)
+tests/unit/calc/favorites.test.js          10 Tests  (filterFavorites — Task 4, neu)
+tests/unit/calc/recipeTracking.test.js      7 Tests  (scaleRecipeMacros — Task 6, neu)
 tests/unit/calc/mealTemplates.test.js      39 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin, null-Fallbacks)
 tests/unit/security/htmlSecurity.test.js    4 Tests  (CDN-Blocklist + CSP-Härtung)
 tests/unit/storage/migrations.test.js       5 Tests  (Schema v3 Migration)
@@ -185,9 +193,9 @@ tests/unit/storage/indexeddb.test.js        8 Tests  (CRUD recipesCustom — sav
 tests/unit/storage/exportImport.test.js     4 Tests  (recipesCustom Export/Import + Altdaten-Robustheit)
 tests/unit/data/initialRecipes.test.js      8 Tests  (Struktur aller 8 Rezepte)
 tests/unit/calc/leucineFactors.test.js     18 Tests  (Phase 3E: estimateLeucineFactor, computeMpsFields)
-tests/unit/api/openFoodFacts.test.js       13 Tests  (Phase 3E: mapOFFProduct, parseOFFSearchResults, normalizeBarcode)
+tests/unit/api/openFoodFacts.test.js       25 Tests  (mapOFFProduct, parseOFFSearchResults, normalizeBarcode, rankOFFResults, classifyOFFError — Task 3)
 ──────────────────────────────────────────────────
-Gesamt                                    216 Tests — alle grün
+Gesamt                                    252 Tests — alle grün
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -217,7 +225,8 @@ Ausführen: `npm test` im Projekt-Root.
 5. ~~**Mahlzeitenanker flexibilisiert**~~ ✅ erledigt (v1.2.6)
 6. ~~**Phase 4 — Rezepte**~~ ✅ erledigt (v1.3.0) — 8 Initialrezepte, eigene Rezepte, Schema v3
 7. ~~**Phase 3E**~~ ✅ erledigt (v1.3.2) — OFD-Suche + Barcode-Scanner, Leucin-Schätzung, MPS-Tagesübersicht, Barcode-UX-Fix
-8. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge
+8. ~~**Stabilisierungsrunde nach 3E**~~ ✅ erledigt (v1.3.3–1.3.5, PR #4) — MPS-Logik, Makro-Ist/Ziel, OFD-Robustheit, Favoriten-Picker, Favorit im Edit-Modus, Rezepte→Tracker
+9. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge
 
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
@@ -244,4 +253,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-06 · APP_VERSION 1.3.2 · SCHEMA_VERSION 3 · Phase 3E abgeschlossen*
+*Zuletzt aktualisiert: 2026-06-07 · APP_VERSION 1.3.5 · SCHEMA_VERSION 3 · Stabilisierungsrunde nach Phase 3E abgeschlossen*
