@@ -142,16 +142,44 @@ describe('computeMpsSummary', () => {
     expect(r.totalActiveSlotsCount).toBe(1);
   });
 
-  it('Slot ist MPS-wirksam wenn mpsTriggered=true explizit gesetzt', () => {
-    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 5, kcal: 80, c: 5, f: 2, mpsTriggered: true }];
+  it('OFD-Eintrag mit ausreichend Leucin (leucineEstimateG ≥ 3g) → Slot wirksam', () => {
+    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 5, kcal: 80, c: 5, f: 2, leucineEstimateG: 3.2, mpsTriggered: true }];
     const r = computeMpsSummary(entries, SLOTS);
     expect(r.mpsSlotsCount).toBe(1);
   });
 
-  it('Slot ist NICHT MPS-wirksam wenn mpsTriggered=false explizit gesetzt (trotz hoher Proteinmenge)', () => {
-    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 50, kcal: 400, c: 30, f: 15, mpsTriggered: false }];
+  it('Hohe Proteinmenge überschreibt nicht-triggerndes OFD-Leucin → Slot wirksam', () => {
+    // OFD-Leucin einzeln zu gering, aber 50g Gesamtprotein im Slot reicht protein-basiert
+    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 50, kcal: 400, c: 30, f: 15, leucineEstimateG: 1.5, mpsTriggered: false }];
+    const r = computeMpsSummary(entries, SLOTS);
+    expect(r.mpsSlotsCount).toBe(1);
+  });
+
+  it('Mehrere OFD-Einträge: Leucinsumme ≥ 3g → Slot wirksam (auch wenn einzelne < 3g)', () => {
+    const entries = [
+      { id: '1', mealSlot: 'Frühstück', p: 10, kcal: 80, c: 4, f: 1, leucineEstimateG: 1.5, mpsTriggered: false },
+      { id: '2', mealSlot: 'Frühstück', p: 8,  kcal: 60, c: 2, f: 1, leucineEstimateG: 1.8, mpsTriggered: false },
+    ];
+    const r = computeMpsSummary(entries, SLOTS);
+    // leucineSum = 3.3g >= 3.0g → wirksam; Protein 18g allein reicht nicht für Hauptmahlzeit
+    expect(r.mpsSlotsCount).toBe(1);
+  });
+
+  it('Mix aus manuellem und OFD-Eintrag: Gesamtprotein reicht → Slot wirksam', () => {
+    const entries = [
+      { id: '1', mealSlot: 'Snack', p: 15, kcal: 100, c: 5, f: 2 },                                  // manuell
+      { id: '2', mealSlot: 'Snack', p: 8,  kcal: 60,  c: 3, f: 1, leucineEstimateG: 0.7, mpsTriggered: false }, // OFD
+    ];
+    const r = computeMpsSummary(entries, SLOTS);
+    // Gesamtprotein 23g im Snack-Slot → wirksam (Leucinsumme 0.7g reicht nicht allein)
+    expect(r.mpsSlotsCount).toBe(1);
+  });
+
+  it('OFD-Einträge: zu wenig Leucin und zu wenig Protein → nicht wirksam', () => {
+    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 5, kcal: 40, c: 3, f: 1, leucineEstimateG: 0.4, mpsTriggered: false }];
     const r = computeMpsSummary(entries, SLOTS);
     expect(r.mpsSlotsCount).toBe(0);
+    expect(r.totalActiveSlotsCount).toBe(1);
   });
 
   it('Fallback auf Protein-Schätzung wenn kein mpsTriggered: 35g in Hauptmahlzeit → wirksam', () => {

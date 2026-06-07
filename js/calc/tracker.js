@@ -85,17 +85,17 @@ export function computeMpsSummary(entries, mealSlots) {
     if (slotEntries.length === 0) continue;
     totalActiveSlotsCount++;
 
-    const offEntries = slotEntries.filter(e => e.mpsTriggered !== undefined);
-    if (offEntries.length > 0) {
-      // OFD-Daten vorhanden → explizites mpsTriggered verwenden
-      if (offEntries.some(e => e.mpsTriggered === true)) mpsSlotsCount++;
-      continue;
-    }
-
-    // Kein OFD-Eintrag → Protein-Schätzung
+    // Protein-Basisschätzung: immer maßgebend — OFD kann nur verbessern, nie blockieren
     const protein = slotTotals[slot] ?? 0;
     const { rating } = rateMealProtein(protein, isMainMealSlot(slot), {});
-    if (rating === 'good') mpsSlotsCount++;
+    if (rating === 'good') { mpsSlotsCount++; continue; }
+
+    // Protein nicht ausreichend → Leucin-Summe aus OFD-Einträgen als Verbesserung prüfen
+    const offEntries = slotEntries.filter(e => e.leucineEstimateG !== undefined);
+    if (offEntries.length > 0) {
+      const leucineSum = offEntries.reduce((s, e) => s + (e.leucineEstimateG ?? 0), 0);
+      if (leucineSum >= 3.0) mpsSlotsCount++;
+    }
   }
 
   return { mpsSlotsCount, totalActiveSlotsCount };
