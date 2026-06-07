@@ -1,6 +1,6 @@
 import { html, useState } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
-import { searchOFF } from '../../api/openFoodFacts.js';
+import { searchOFF, classifyOFFError } from '../../api/openFoodFacts.js';
 
 /**
  * Textsuch-Panel für Open Food Facts.
@@ -20,15 +20,28 @@ export function OFFSearchPanel({ onSelect, onClose }) {
   async function handleSearch() {
     const q = query.trim();
     if (!q) return;
+    if (q.length < 2) {
+      setError('Mindestens 2 Zeichen eingeben.');
+      return;
+    }
     setLoading(true);
     setError(null);
     setResults([]);
     try {
       const products = await searchOFF(q);
       setResults(products);
-      if (products.length === 0) setError('Keine Produkte gefunden.');
-    } catch {
-      setError('Suche fehlgeschlagen. Bitte Internetverbindung prüfen.');
+      if (products.length === 0) setError('Keine Produkte gefunden. Anderen Begriff versuchen?');
+    } catch (err) {
+      const kind = classifyOFFError(err);
+      if (kind === 'too_short') {
+        setError('Mindestens 2 Zeichen eingeben.');
+      } else if (kind === 'timeout' || kind === 'server') {
+        setError('Open Food Facts ist gerade nicht erreichbar — bitte gleich nochmal versuchen.');
+      } else if (kind === 'network') {
+        setError('Kein Netzwerk. Bitte Internetverbindung prüfen.');
+      } else {
+        setError('Suche fehlgeschlagen. Bitte später nochmal versuchen.');
+      }
     } finally {
       setLoading(false);
     }
@@ -42,7 +55,7 @@ export function OFFSearchPanel({ onSelect, onClose }) {
           value=${query}
           placeholder="z.B. Magerquark"
           onInput=${e => setQuery(e.target.value)}
-          onKeyDown=${e => e.key === 'Enter' && handleSearch()}
+          onKeyDown=${e => e.key === 'Enter' && !loading && handleSearch()}
           style=${{ ...S.input, flex: 1 }}
           autoFocus
         />
