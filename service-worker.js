@@ -1,6 +1,6 @@
 // service-worker.js
 // Version muss mit js/version.js synchron gehalten werden.
-const APP_VERSION = '1.3.3';
+const APP_VERSION = '1.3.4';
 const CACHE_STATIC = `ernaehrung-static-${APP_VERSION}`;
 
 // ── Lokale Assets (vollständig pre-cachen beim Install) ──────────────────────

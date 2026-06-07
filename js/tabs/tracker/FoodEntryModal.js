@@ -77,6 +77,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
       setP100(String(Math.round(initialEntry.p * f * 10) / 10));
       setC100(String(Math.round(initialEntry.c * f * 10) / 10));
       setF100(String(Math.round(initialEntry.f * f * 10) / 10));
+      setSaveFav(false);
     } else {
       setSlot(safeSlot);
       setName('');
@@ -151,14 +152,16 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
       entry.mpsTriggered = mpsTriggered;
     }
 
-    const favData = saveFav ? {
+    const nameKey = name.trim().toLowerCase();
+    const isDuplicate = favorites.some(f => f.name.trim().toLowerCase() === nameKey);
+    const favData = (saveFav && !isDuplicate) ? {
       id: generateId(),
       name: name.trim(),
       kcal100: parseFloat(kcal100) || 0,
       p100: parseFloat(p100) || 0,
       c100: parseFloat(c100) || 0,
       f100: parseFloat(f100) || 0,
-      source: 'manual',
+      ...(offData ? { source: 'off', offCode: offData.offCode } : { source: 'manual' }),
     } : null;
 
     onSave(entry, favData);
@@ -296,27 +299,25 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
           </div>
         `}
 
-        <!-- Als Favorit speichern (nur Neueingabe) -->
-        ${!isEdit && html`
-          <label style=${{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '16px',
-            cursor: 'pointer',
-            fontSize: '12px',
-            color: COLORS.textMuted,
-            fontFamily: FONTS.mono,
-          }}>
-            <input
-              type="checkbox"
-              checked=${saveFav}
-              onChange=${e => setSaveFav(e.target.checked)}
-              style=${{ accentColor: COLORS.gold }}
-            />
-            Als Favorit speichern
-          </label>
-        `}
+        <!-- Als Favorit speichern -->
+        <label style=${{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '16px',
+          cursor: 'pointer',
+          fontSize: '12px',
+          color: COLORS.textMuted,
+          fontFamily: FONTS.mono,
+        }}>
+          <input
+            type="checkbox"
+            checked=${saveFav}
+            onChange=${e => setSaveFav(e.target.checked)}
+            style=${{ accentColor: COLORS.gold }}
+          />
+          Als Favorit speichern
+        </label>
 
         <!-- Buttons -->
         <div style=${{ display: 'flex', gap: '8px' }}>
