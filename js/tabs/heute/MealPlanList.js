@@ -10,10 +10,10 @@ export function MealPlanList({ dayType, trainingTime, macros, consumedBySlot, wa
   return html`
     <div>
       ${meals.map((meal, i) => {
-        const consumedProtein = consumedBySlot
-          ? (consumedBySlot[meal.label] ?? 0)
+        const consumedMacros = consumedBySlot
+          ? (consumedBySlot[meal.label] ?? { p: 0, c: 0, f: 0 })
           : undefined;
-        return html`<${MealPlanEntry} key=${i} meal=${meal} consumedProtein=${consumedProtein} />`;
+        return html`<${MealPlanEntry} key=${i} meal=${meal} consumedMacros=${consumedMacros} />`;
       })}
     </div>
   `;

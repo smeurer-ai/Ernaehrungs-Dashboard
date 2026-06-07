@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcTrackedFoodMacros, sumConsumed, groupProteinBySlot, computeMpsSummary } from '../../../js/calc/tracker.js';
+import { calcTrackedFoodMacros, sumConsumed, groupProteinBySlot, groupMacrosBySlot, computeMpsSummary } from '../../../js/calc/tracker.js';
 
 // Referenz-Lebensmittel für Tests
 const QUARK        = { kcal100: 72,  p100: 12,  c100: 4,  f100: 0.2 };
@@ -127,6 +127,38 @@ describe('groupProteinBySlot', () => {
   });
 });
 
+describe('groupMacrosBySlot', () => {
+  it('summiert P/KH/F eines einzelnen Slots', () => {
+    const entries = [
+      { mealSlot: 'Frühstück', p: 20, c: 40, f: 8 },
+      { mealSlot: 'Frühstück', p: 10, c: 15, f: 3 },
+    ];
+    expect(groupMacrosBySlot(entries)).toEqual({
+      'Frühstück': { p: 30, c: 55, f: 11 },
+    });
+  });
+
+  it('verwaltet mehrere Slots unabhängig', () => {
+    const entries = [
+      { mealSlot: 'Frühstück',  p: 20, c: 30, f: 5 },
+      { mealSlot: 'Mittagessen', p: 35, c: 50, f: 12 },
+    ];
+    expect(groupMacrosBySlot(entries)).toEqual({
+      'Frühstück':   { p: 20, c: 30, f: 5  },
+      'Mittagessen': { p: 35, c: 50, f: 12 },
+    });
+  });
+
+  it('ordnet Einträge ohne mealSlot unter "Sonstiges" ein', () => {
+    const entries = [{ p: 10, c: 20, f: 4 }];
+    expect(groupMacrosBySlot(entries)).toEqual({ 'Sonstiges': { p: 10, c: 20, f: 4 } });
+  });
+
+  it('behandelt fehlende Makro-Felder ohne Absturz', () => {
+    expect(groupMacrosBySlot([{ mealSlot: 'Frühstück' }])).toEqual({ 'Frühstück': { p: 0, c: 0, f: 0 } });
+  });
+});
+
 describe('computeMpsSummary', () => {
   const SLOTS = ['Frühstück', 'Mittagessen', 'Snack'];
 
@@ -142,16 +174,44 @@ describe('computeMpsSummary', () => {
     expect(r.totalActiveSlotsCount).toBe(1);
   });
 
-  it('Slot ist MPS-wirksam wenn mpsTriggered=true explizit gesetzt', () => {
-    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 5, kcal: 80, c: 5, f: 2, mpsTriggered: true }];
+  it('OFD-Eintrag mit ausreichend Leucin (leucineEstimateG ≥ 3g) → Slot wirksam', () => {
+    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 5, kcal: 80, c: 5, f: 2, leucineEstimateG: 3.2, mpsTriggered: true }];
     const r = computeMpsSummary(entries, SLOTS);
     expect(r.mpsSlotsCount).toBe(1);
   });
 
-  it('Slot ist NICHT MPS-wirksam wenn mpsTriggered=false explizit gesetzt (trotz hoher Proteinmenge)', () => {
-    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 50, kcal: 400, c: 30, f: 15, mpsTriggered: false }];
+  it('Hohe Proteinmenge überschreibt nicht-triggerndes OFD-Leucin → Slot wirksam', () => {
+    // OFD-Leucin einzeln zu gering, aber 50g Gesamtprotein im Slot reicht protein-basiert
+    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 50, kcal: 400, c: 30, f: 15, leucineEstimateG: 1.5, mpsTriggered: false }];
+    const r = computeMpsSummary(entries, SLOTS);
+    expect(r.mpsSlotsCount).toBe(1);
+  });
+
+  it('Mehrere OFD-Einträge: Leucinsumme ≥ 3g → Slot wirksam (auch wenn einzelne < 3g)', () => {
+    const entries = [
+      { id: '1', mealSlot: 'Frühstück', p: 10, kcal: 80, c: 4, f: 1, leucineEstimateG: 1.5, mpsTriggered: false },
+      { id: '2', mealSlot: 'Frühstück', p: 8,  kcal: 60, c: 2, f: 1, leucineEstimateG: 1.8, mpsTriggered: false },
+    ];
+    const r = computeMpsSummary(entries, SLOTS);
+    // leucineSum = 3.3g >= 3.0g → wirksam; Protein 18g allein reicht nicht für Hauptmahlzeit
+    expect(r.mpsSlotsCount).toBe(1);
+  });
+
+  it('Mix aus manuellem und OFD-Eintrag: Gesamtprotein reicht → Slot wirksam', () => {
+    const entries = [
+      { id: '1', mealSlot: 'Snack', p: 15, kcal: 100, c: 5, f: 2 },                                  // manuell
+      { id: '2', mealSlot: 'Snack', p: 8,  kcal: 60,  c: 3, f: 1, leucineEstimateG: 0.7, mpsTriggered: false }, // OFD
+    ];
+    const r = computeMpsSummary(entries, SLOTS);
+    // Gesamtprotein 23g im Snack-Slot → wirksam (Leucinsumme 0.7g reicht nicht allein)
+    expect(r.mpsSlotsCount).toBe(1);
+  });
+
+  it('OFD-Einträge: zu wenig Leucin und zu wenig Protein → nicht wirksam', () => {
+    const entries = [{ id: '1', mealSlot: 'Frühstück', p: 5, kcal: 40, c: 3, f: 1, leucineEstimateG: 0.4, mpsTriggered: false }];
     const r = computeMpsSummary(entries, SLOTS);
     expect(r.mpsSlotsCount).toBe(0);
+    expect(r.totalActiveSlotsCount).toBe(1);
   });
 
   it('Fallback auf Protein-Schätzung wenn kein mpsTriggered: 35g in Hauptmahlzeit → wirksam', () => {

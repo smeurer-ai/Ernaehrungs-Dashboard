@@ -1,6 +1,6 @@
 // service-worker.js
 // Version muss mit js/version.js synchron gehalten werden.
-const APP_VERSION = '1.3.2';
+const APP_VERSION = '1.3.5';
 const CACHE_STATIC = `ernaehrung-static-${APP_VERSION}`;
 
 // ── Lokale Assets (vollständig pre-cachen beim Install) ──────────────────────
@@ -33,6 +33,8 @@ const LOCAL_ASSETS = [
   './js/calc/hydration.js',
   './js/calc/tracker.js',
   './js/calc/leucineFactors.js',
+  './js/calc/favorites.js',
+  './js/calc/recipeTracking.js',
   './js/hooks/useLog.js',
   './js/hooks/useFavoriteFoods.js',
   './js/hooks/useRecipes.js',
@@ -70,6 +72,7 @@ const LOCAL_ASSETS = [
   './js/tabs/tracker/TrackerTab.js',
   './js/tabs/rezepte/RecipeCard.js',
   './js/tabs/rezepte/RecipeEditor.js',
+  './js/tabs/rezepte/RecipeToTrackerModal.js',
   './js/tabs/rezepte/RezepteTab.js',
   './js/tabs/woche/WeekGrid.js',
   './js/tabs/woche/WocheTab.js',

@@ -1,7 +1,7 @@
 import { html } from '../../lib.js';
 import { COLORS, FONTS, S } from '../../ui/theme.js';
 
-export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onEdit, onDelete }) {
+export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onEdit, onDelete, onAddToTracker }) {
   return html`
     <div style=${{ ...S.card, cursor: 'pointer' }} onClick=${onToggle}>
 
@@ -72,9 +72,18 @@ export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onE
             <span style=${{ color: '#e8c8a8' }}>${recipe.fat}g F</span>
           </div>
 
+          ${onAddToTracker && html`
+            <div style=${{ marginTop: '10px' }} onClick=${e => e.stopPropagation()}>
+              <button
+                onClick=${() => onAddToTracker(recipe)}
+                style=${{ width: '100%', background: '#1a2a1a', border: '1px solid #2a4a2a', borderRadius: '8px', color: '#a0d8a0', padding: '8px', fontSize: '12px', cursor: 'pointer', fontFamily: FONTS.mono }}
+              >In Tracker übernehmen</button>
+            </div>
+          `}
+
           ${isCustom && html`
             <div
-              style=${{ display: 'flex', gap: '8px', marginTop: '12px' }}
+              style=${{ display: 'flex', gap: '8px', marginTop: '8px' }}
               onClick=${e => e.stopPropagation()}
             >
               <button

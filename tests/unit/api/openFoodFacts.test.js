@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapOFFProduct, normalizeBarcode, parseOFFSearchResults } from '../../../js/api/openFoodFacts.js';
+import { mapOFFProduct, normalizeBarcode, parseOFFSearchResults, rankOFFResults, classifyOFFError } from '../../../js/api/openFoodFacts.js';
 
 describe('mapOFFProduct', () => {
   it('mappt deutsche Produktbezeichnung bevorzugt', () => {
@@ -120,5 +120,73 @@ describe('normalizeBarcode', () => {
 
   it('entfernt Scan-Artefakte und behält nur Ziffern', () => {
     expect(normalizeBarcode('EAN: 400-8400 402225')).toBe('4008400402225');
+  });
+});
+
+// Hilfsfunktion: minimales gemapptes OFD-Produkt für Ranking-Tests
+function p(name, categoriesTags = []) {
+  return { name, categoriesTags, kcal100: 50, p100: 5, c100: 10, f100: 2, offCode: name, source: 'off' };
+}
+
+describe('rankOFFResults', () => {
+  it('gibt leere Liste unverändert zurück', () => {
+    expect(rankOFFResults([], 'Apfel')).toEqual([]);
+  });
+
+  it('verändert die Originalliste nicht (immutabel)', () => {
+    const orig = [p('Apfelsaft', ['en:juices']), p('Apfel', ['en:fruits'])];
+    rankOFFResults(orig, 'Apfel');
+    expect(orig[0].name).toBe('Apfelsaft');
+  });
+
+  it('exakter Namenstrefffer landet auf Platz 1', () => {
+    const products = [p('Apfelsaft', ['en:juices']), p('Apfel', ['en:fruits']), p('Apfelkompott', ['en:compote'])];
+    const ranked = rankOFFResults(products, 'Apfel');
+    expect(ranked[0].name).toBe('Apfel');
+  });
+
+  it('Präfix-Treffer vor enthaltenem Treffer', () => {
+    const products = [p('Rote Äpfel Kompott', ['en:compote']), p('Äpfel frisch', ['en:fruits'])];
+    const ranked = rankOFFResults(products, 'Äpfel');
+    expect(ranked[0].name).toBe('Äpfel frisch');
+  });
+
+  it('Saft/Kompott/Getränk wird gegenüber gleichwertigem Treffer abgestraft', () => {
+    const products = [p('Apfelsaft', ['en:fruit-juices', 'en:beverages']), p('Apfel Snack', ['en:fruits'])];
+    const ranked = rankOFFResults(products, 'Apfel');
+    expect(ranked[0].name).toBe('Apfel Snack');
+  });
+
+  it('Reihenfolge stabil wenn Scores gleich sind', () => {
+    const products = [p('Banane A', ['en:fruits']), p('Banane B', ['en:fruits'])];
+    const ranked = rankOFFResults(products, 'Banane');
+    expect(ranked.map(r => r.name)).toEqual(['Banane A', 'Banane B']);
+  });
+});
+
+describe('classifyOFFError', () => {
+  it('klassifiziert OFD_QUERY_TOO_SHORT', () => {
+    expect(classifyOFFError(new Error('OFD_QUERY_TOO_SHORT'))).toBe('too_short');
+  });
+
+  it('klassifiziert OFD_TIMEOUT', () => {
+    expect(classifyOFFError(new Error('OFD_TIMEOUT'))).toBe('timeout');
+  });
+
+  it('klassifiziert OFD_SERVER_ERROR (mit Status-Code)', () => {
+    expect(classifyOFFError(new Error('OFD_SERVER_ERROR:503'))).toBe('server');
+  });
+
+  it('klassifiziert OFD_NETWORK', () => {
+    expect(classifyOFFError(new Error('OFD_NETWORK'))).toBe('network');
+  });
+
+  it('klassifiziert unbekannte Fehler als unknown', () => {
+    expect(classifyOFFError(new Error('Etwas anderes'))).toBe('unknown');
+  });
+
+  it('behandelt null/undefined ohne Absturz', () => {
+    expect(classifyOFFError(null)).toBe('unknown');
+    expect(classifyOFFError(undefined)).toBe('unknown');
   });
 });

@@ -54,6 +54,22 @@ export function groupProteinBySlot(entries) {
   }, {});
 }
 
+/**
+ * Gibt P/KH/F-Summen je Mahlzeit-Slot zurück.
+ * Lookup-Key entspricht meal.label in MealPlanEntry (z.B. "Frühstück").
+ * Einträge ohne mealSlot landen unter "Sonstiges".
+ *
+ * @param {Array<{mealSlot?: string, p?: number, c?: number, f?: number}>} entries
+ * @returns {Record<string, {p: number, c: number, f: number}>}
+ */
+export function groupMacrosBySlot(entries) {
+  return entries.reduce((acc, e) => {
+    const slot = e.mealSlot || 'Sonstiges';
+    const cur = acc[slot] ?? { p: 0, c: 0, f: 0 };
+    return { ...acc, [slot]: { p: cur.p + (e.p ?? 0), c: cur.c + (e.c ?? 0), f: cur.f + (e.f ?? 0) } };
+  }, {});
+}
+
 export function calcTrackedFoodMacros(food, gramm) {
   const factor = gramm / 100;
   return {
@@ -85,17 +101,17 @@ export function computeMpsSummary(entries, mealSlots) {
     if (slotEntries.length === 0) continue;
     totalActiveSlotsCount++;
 
-    const offEntries = slotEntries.filter(e => e.mpsTriggered !== undefined);
-    if (offEntries.length > 0) {
-      // OFD-Daten vorhanden → explizites mpsTriggered verwenden
-      if (offEntries.some(e => e.mpsTriggered === true)) mpsSlotsCount++;
-      continue;
-    }
-
-    // Kein OFD-Eintrag → Protein-Schätzung
+    // Protein-Basisschätzung: immer maßgebend — OFD kann nur verbessern, nie blockieren
     const protein = slotTotals[slot] ?? 0;
     const { rating } = rateMealProtein(protein, isMainMealSlot(slot), {});
-    if (rating === 'good') mpsSlotsCount++;
+    if (rating === 'good') { mpsSlotsCount++; continue; }
+
+    // Protein nicht ausreichend → Leucin-Summe aus OFD-Einträgen als Verbesserung prüfen
+    const offEntries = slotEntries.filter(e => e.leucineEstimateG !== undefined);
+    if (offEntries.length > 0) {
+      const leucineSum = offEntries.reduce((s, e) => s + (e.leucineEstimateG ?? 0), 0);
+      if (leucineSum >= 3.0) mpsSlotsCount++;
+    }
   }
 
   return { mpsSlotsCount, totalActiveSlotsCount };
