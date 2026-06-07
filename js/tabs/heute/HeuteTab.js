@@ -6,7 +6,7 @@ import { HydrationCard } from './HydrationCard.js';
 import { MpsSummaryCard } from './MpsSummaryCard.js';
 import { useUiState } from '../../hooks/useUiState.js';
 import { useLog } from '../../hooks/useLog.js';
-import { sumConsumed, groupProteinBySlot } from '../../calc/tracker.js';
+import { sumConsumed, groupMacrosBySlot } from '../../calc/tracker.js';
 import { S, COLORS } from '../../ui/theme.js';
 
 export function HeuteTab({ profile, calculated }) {
@@ -23,7 +23,7 @@ export function HeuteTab({ profile, calculated }) {
   const consumed = loading
     ? { kcal: 0, protein: 0, carbs: 0, fat: 0 }
     : sumConsumed(entries);
-  const consumedBySlot = loading ? undefined : groupProteinBySlot(entries);
+  const consumedBySlot = loading ? undefined : groupMacrosBySlot(entries);
 
   if (!profile || !calculated) {
     return html`

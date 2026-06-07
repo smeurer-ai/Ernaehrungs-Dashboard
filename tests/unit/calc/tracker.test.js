@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcTrackedFoodMacros, sumConsumed, groupProteinBySlot, computeMpsSummary } from '../../../js/calc/tracker.js';
+import { calcTrackedFoodMacros, sumConsumed, groupProteinBySlot, groupMacrosBySlot, computeMpsSummary } from '../../../js/calc/tracker.js';
 
 // Referenz-Lebensmittel für Tests
 const QUARK        = { kcal100: 72,  p100: 12,  c100: 4,  f100: 0.2 };
@@ -124,6 +124,38 @@ describe('groupProteinBySlot', () => {
       'Abendessen':  35,
       'Sonstiges':   8,
     });
+  });
+});
+
+describe('groupMacrosBySlot', () => {
+  it('summiert P/KH/F eines einzelnen Slots', () => {
+    const entries = [
+      { mealSlot: 'Frühstück', p: 20, c: 40, f: 8 },
+      { mealSlot: 'Frühstück', p: 10, c: 15, f: 3 },
+    ];
+    expect(groupMacrosBySlot(entries)).toEqual({
+      'Frühstück': { p: 30, c: 55, f: 11 },
+    });
+  });
+
+  it('verwaltet mehrere Slots unabhängig', () => {
+    const entries = [
+      { mealSlot: 'Frühstück',  p: 20, c: 30, f: 5 },
+      { mealSlot: 'Mittagessen', p: 35, c: 50, f: 12 },
+    ];
+    expect(groupMacrosBySlot(entries)).toEqual({
+      'Frühstück':   { p: 20, c: 30, f: 5  },
+      'Mittagessen': { p: 35, c: 50, f: 12 },
+    });
+  });
+
+  it('ordnet Einträge ohne mealSlot unter "Sonstiges" ein', () => {
+    const entries = [{ p: 10, c: 20, f: 4 }];
+    expect(groupMacrosBySlot(entries)).toEqual({ 'Sonstiges': { p: 10, c: 20, f: 4 } });
+  });
+
+  it('behandelt fehlende Makro-Felder ohne Absturz', () => {
+    expect(groupMacrosBySlot([{ mealSlot: 'Frühstück' }])).toEqual({ 'Frühstück': { p: 0, c: 0, f: 0 } });
   });
 });
 

@@ -1,7 +1,7 @@
 import { html } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 
-function proteinLineColor(consumed, planned) {
+function macroLineColor(consumed, planned) {
   if (consumed === 0) return COLORS.textSubtle;
   const ratio = consumed / planned;
   if (ratio > 1.1)  return COLORS.gold;
@@ -9,7 +9,7 @@ function proteinLineColor(consumed, planned) {
   return COLORS.textMuted;
 }
 
-export function MealPlanEntry({ meal, consumedProtein }) {
+export function MealPlanEntry({ meal, consumedMacros }) {
   return html`
     <div style=${S.mealCard}>
       <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
@@ -41,18 +41,24 @@ export function MealPlanEntry({ meal, consumedProtein }) {
           ${meal.note}
         </div>
       `}
-      ${consumedProtein !== undefined && html`
+      ${consumedMacros !== undefined && html`
         <div style=${{
           fontSize: '11px',
           fontFamily: FONTS.mono,
           marginTop: '6px',
           borderTop: '1px solid #1e1e1e',
           paddingTop: '6px',
-          color: proteinLineColor(consumedProtein, meal.protein),
         }}>
-          ${consumedProtein === 0
-            ? 'Protein: Noch nicht erfasst'
-            : `Protein: ${Math.round(consumedProtein)} g / ${meal.protein} g`
+          ${consumedMacros.p === 0 && consumedMacros.c === 0 && consumedMacros.f === 0
+            ? html`<span style=${{ color: COLORS.textSubtle }}>Noch nichts eingetragen</span>`
+            : html`
+              <span style=${{ color: macroLineColor(consumedMacros.p, meal.protein) }}>P ${Math.round(consumedMacros.p)}/${meal.protein}</span>
+              <span style=${{ color: '#444', margin: '0 5px' }}>·</span>
+              <span style=${{ color: macroLineColor(consumedMacros.c, meal.carbs) }}>KH ${Math.round(consumedMacros.c)}/${meal.carbs}</span>
+              <span style=${{ color: '#444', margin: '0 5px' }}>·</span>
+              <span style=${{ color: macroLineColor(consumedMacros.f, meal.fat) }}>F ${Math.round(consumedMacros.f)}/${meal.fat}</span>
+              <span style=${{ color: '#666' }}> g</span>
+            `
           }
         </div>
       `}

@@ -54,6 +54,22 @@ export function groupProteinBySlot(entries) {
   }, {});
 }
 
+/**
+ * Gibt P/KH/F-Summen je Mahlzeit-Slot zurück.
+ * Lookup-Key entspricht meal.label in MealPlanEntry (z.B. "Frühstück").
+ * Einträge ohne mealSlot landen unter "Sonstiges".
+ *
+ * @param {Array<{mealSlot?: string, p?: number, c?: number, f?: number}>} entries
+ * @returns {Record<string, {p: number, c: number, f: number}>}
+ */
+export function groupMacrosBySlot(entries) {
+  return entries.reduce((acc, e) => {
+    const slot = e.mealSlot || 'Sonstiges';
+    const cur = acc[slot] ?? { p: 0, c: 0, f: 0 };
+    return { ...acc, [slot]: { p: cur.p + (e.p ?? 0), c: cur.c + (e.c ?? 0), f: cur.f + (e.f ?? 0) } };
+  }, {});
+}
+
 export function calcTrackedFoodMacros(food, gramm) {
   const factor = gramm / 100;
   return {
