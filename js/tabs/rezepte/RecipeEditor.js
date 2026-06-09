@@ -343,7 +343,6 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
         </div>
       `}
 
-      <!-- Zutaten -->
       <div style=${{ ...S.cardTitle, marginBottom: '6px' }}>
         Zutaten
         <span style=${{ color: COLORS.gold, fontWeight: 400, letterSpacing: 0, marginLeft: '8px' }}>● = Hauptzutat</span>
