@@ -234,7 +234,6 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
         </div>
       `}
 
-      <!-- Name -->
       <label style=${S.label}>Name *</label>
       <input
         style=${{ ...inp, marginBottom: '12px' }}
@@ -243,7 +242,6 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
         placeholder="Rezeptname"
       />
 
-      <!-- Mahlzeit-Slot + Portionen -->
       <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
         <div>
           <label style=${S.label}>Mahlzeit *</label>
@@ -264,7 +262,6 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
         </div>
       </div>
 
-      <!-- Zubereitungszeit -->
       <label style=${S.label}>Zubereitungszeit</label>
       <input
         style=${{ ...inp, marginBottom: '14px' }}
@@ -273,7 +270,6 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
         placeholder="z.B. 20 min"
       />
 
-      <!-- Makros -->
       <div style=${{ ...S.cardTitle, marginBottom: '8px', marginTop: '4px' }}>
         Makros (gesamt)
         ${computedMacros ? html`<span style=${{ fontWeight: 400, color: COLORS.textMuted, fontSize: '11px', marginLeft: '8px' }}>⚡ aus Zutaten</span>` : null}
@@ -455,7 +451,6 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
       `)}
       <button onClick=${addIngredient} style=${addBtnStyle}>+ Zutat hinzufügen</button>
 
-      <!-- Schritte -->
       <div style=${{ ...S.cardTitle, marginBottom: '8px' }}>Zubereitung *</div>
       ${form.steps.map((step, i) => html`
         <div key=${i} style=${{ display: 'flex', gap: '6px', alignItems: 'flex-start', marginBottom: '6px' }}>
@@ -475,7 +470,6 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
       `)}
       <button onClick=${addStep} style=${addBtnStyle}>+ Schritt hinzufügen</button>
 
-      <!-- Tipp -->
       <label style=${S.label}>Tipp (optional)</label>
       <textarea
         style=${{ ...ta, width: '100%', marginBottom: '16px' }}
@@ -484,7 +478,6 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
         placeholder="Ernährungswissen, Varianten, Hinweise…"
       />
 
-      <!-- Buttons -->
       <div style=${{ display: 'flex', gap: '8px' }}>
         <button onClick=${onClose} style=${{ ...S.btn('#2a2a2a', COLORS.text), flex: 1 }}>
           Abbrechen
