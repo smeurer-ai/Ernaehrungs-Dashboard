@@ -15,7 +15,7 @@ export const UNIT_GRAM_DEFAULTS = {
  */
 export function calcIngredientMacros(ingredient) {
   const { amount, unit, kcal100, p100, c100, f100, grammEquivalent } = ingredient;
-  if (kcal100 == null) return null;
+  if (kcal100 == null || p100 == null || c100 == null || f100 == null) return null;
 
   let gramm;
   if (unit === 'g') {

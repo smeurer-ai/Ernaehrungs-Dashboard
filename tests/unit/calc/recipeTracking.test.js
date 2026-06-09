@@ -85,6 +85,14 @@ describe('calcIngredientMacros', () => {
     const r = calcIngredientMacros({ name: 'Ei', amount: 1, unit: 'Stk', grammEquivalent: 55, kcal100: 143, p100: 12, c100: 1, f100: 10 });
     expect(r).toEqual({ kcal: 79, p: 6.6, c: 0.6, f: 5.5, gramm: 55 });
   });
+
+  it('nur kcal100 vorhanden, p100/c100/f100 fehlen → null', () => {
+    expect(calcIngredientMacros({ name: 'X', amount: 100, unit: 'g', kcal100: 100 })).toBeNull();
+  });
+
+  it('kcal100 + p100 vorhanden, c100/f100 fehlen → null', () => {
+    expect(calcIngredientMacros({ name: 'X', amount: 100, unit: 'g', kcal100: 100, p100: 5 })).toBeNull();
+  });
 });
 
 describe('calcRecipeMacrosFromIngredients', () => {
@@ -117,6 +125,15 @@ describe('calcRecipeMacrosFromIngredients', () => {
 
   it('leeres Array → null', () => {
     expect(calcRecipeMacrosFromIngredients([])).toBeNull();
+  });
+
+  it('Zutat mit nur kcal100 (fehlende p/c/f) → missingCount 1', () => {
+    const r = calcRecipeMacrosFromIngredients([
+      { name: 'A', amount: 100, unit: 'g', kcal100: 100, p100: 10, c100: 20, f100: 5 },
+      { name: 'B', amount: 50, unit: 'g', kcal100: 80 },
+    ]);
+    expect(r.kcal).toBe(100);   // nur A berechnet
+    expect(r.missingCount).toBe(1);
   });
 });
 
