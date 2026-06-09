@@ -2,6 +2,7 @@ import { html, useState } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { INITIAL_RECIPES } from '../../data/initialRecipes.js';
 import { useRecipes } from '../../hooks/useRecipes.js';
+import { useFavoriteFoods } from '../../hooks/useFavoriteFoods.js';
 import { RecipeCard } from './RecipeCard.js';
 import { RecipeEditor } from './RecipeEditor.js';
 import { RecipeToTrackerModal } from './RecipeToTrackerModal.js';
@@ -9,6 +10,7 @@ import { getLogForDate, saveLogEntry } from '../../storage/indexeddb.js';
 
 export function RezepteTab() {
   const { recipes, loading, saveRecipe, removeRecipe } = useRecipes();
+  const { favorites } = useFavoriteFoods();
   const [expandedId, setExpandedId]   = useState(null);
   const [editorOpen, setEditorOpen]   = useState(false);
   const [editRecipe, setEditRecipe]   = useState(null);
@@ -114,6 +116,7 @@ export function RezepteTab() {
         onClose=${() => setEditorOpen(false)}
         recipe=${editRecipe}
         onSave=${saveRecipe}
+        favorites=${favorites}
       />
 
       <${RecipeToTrackerModal}
