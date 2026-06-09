@@ -1,9 +1,10 @@
 # Abschlussbericht: Stabilisierungsrunde nach Phase 3E
 
-**Datum:** 2026-06-07  
-**APP_VERSION:** `1.3.5` · **SCHEMA_VERSION:** `3`  
+**Datum:** 2026-06-07 (Nachträge: 2026-06-09)  
+**APP_VERSION:** `1.3.7` · **SCHEMA_VERSION:** `3`  
 **Teststand:** 252/252 Tests grün (15 Test-Dateien)  
-**Branch:** `fix/mps-summary-slot-logic` → gemergt in `master` als PR #4
+**Branch:** `fix/mps-summary-slot-logic` → gemergt in `master` als PR #4  
+**Nachtrags-Branches:** `fix/daytype-sync-ofd-favs-version` (PR #5) · `fix/font-sizes` (PR #6)
 
 ---
 
@@ -123,4 +124,76 @@ Diese Punkte wurden absichtlich nicht in diese Runde gezogen:
 
 ---
 
-*Erstellt: 2026-06-07 · Stabilisierungsrunde nach Phase 3E · APP_VERSION 1.3.5*
+---
+
+## Nachträge nach erstem Mobile-Test (`1.3.6` + `1.3.7`)
+
+Nach dem ersten mobilen Testdurchlauf zeigten sich weitere UX-Probleme und ein kritischer Sync-Bug. Diese wurden in zwei weiteren Fix-Branches behoben und als PR #5 und PR #6 in `master` gemergt.
+
+---
+
+### Nachtrag 1 — DayType-/Slot-Sync Heute↔Tracker (Bug 1, `1.3.6`)
+
+**Problem:** `HeuteTab` und `TrackerTab` lasen `useUiState()` jeweils unabhängig aus — zwei separate React-States, nur über `localStorage` verbunden. Wenn die Nutzerin im Heute-Tab den DayType änderte, bekam der Tracker-Tab das nicht mit und verwendete den veralteten Wert.
+
+**Lösung:** `useUiState()` nur noch in `App` aufgerufen. `HeuteTab` empfängt `dayType`, `trainingTime`, `trainingDurationMin` als Props und gibt Änderungen via `onUiStateUpdate`-Callback zurück. `TrackerTab` liest Werte direkt aus den `App`-Props.
+
+**Dateien:** `js/app.js`, `js/tabs/heute/HeuteTab.js`
+
+---
+
+### Nachtrag 2 — OFD-Favoriten nicht zuverlässig gespeichert (Bug 4, `1.3.6`)
+
+**Problem:** In `handleOFFSelect` wurde `setSaveFav(false)` aufgerufen — die Checkbox „Als Favorit speichern" wurde bei jeder OFD-Produktauswahl stillschweigend zurückgesetzt, auch wenn die Nutzerin sie bereits aktiviert hatte.
+
+**Lösung:** `setSaveFav(false)` aus `handleOFFSelect` entfernt. Eine Zeile Fix.
+
+**Dateien:** `js/tabs/tracker/FoodEntryModal.js`
+
+---
+
+### Nachtrag 3 — App-Version sichtbar gemacht (Bug 5, `1.3.6`)
+
+**Problem:** Die installierte App-Version war nirgends in der UI sichtbar.
+
+**Lösung:** `v1.3.7 · Schema 3` am Ende der Daten-Management-Karte im Profil-Tab angezeigt. Werte kommen direkt aus `js/version.js` (automatisch aktuell).
+
+**Dateien:** `js/tabs/profil/DataManagement.js`
+
+---
+
+### Nachtrag 4 — Schriftgrößen appweit angehoben (Bug 6, `1.3.7`)
+
+**Problem:** Die meisten Schriften lagen bei 9–11px — für die Zielgruppe Frauen 50+ deutlich zu klein.
+
+**Lösung:** Zentrale Anpassungen in `theme.js` (tab 12→13px, label 11→13px, chip 10→12px, btn 11→14px, tag 9→11px, bottomNavTab 9→11px) plus gezielte Inline-Korrekturen in vier Komponenten.
+
+**Dateien:** `js/ui/theme.js`, `js/tabs/tracker/DayLogEntry.js`, `js/tabs/heute/MealPlanEntry.js`, `js/tabs/rezepte/RecipeCard.js`, `js/tabs/tracker/FavoritePicker.js`
+
+---
+
+### Nachtrag 5 — Casein-Slot (Bug 2) — bewusst keine Änderung
+
+Der Casein-Slot (`Abend-Snack / Casein`) bleibt als valide Option in `RECIPE_MEAL_SLOTS`. Casein vor dem Schlafengehen ist ein gut belegtes Konzept für Muskelproteinsynthese über Nacht (Res Sp Sports Med 2019) und passt zum Ernährungskonzept. Kein Code-Change nötig.
+
+---
+
+### Nachtrag 6 — Rezept-Makros aus Zutaten (Bug 3) — offenes Folgefeature
+
+Das automatische Berechnen der Rezept-Makros aus den einzelnen Zutaten (Lebensmittel-DB-Lookup pro Zutat) ist zu groß für einen Bugfix. Es wird als eigenständiges Feature in Phase 5 / Folge-Spec geplant.
+
+**Offen:** Design-Spec für „Makros aus Zutaten berechnen" — eigener Branch/Plan, nicht mit Phase 5 (Supabase) vermischt.
+
+---
+
+## Aktueller Teststand nach allen Nachträgen
+
+```
+Gesamt  252/252 Tests — alle grün
+APP_VERSION  1.3.7
+SCHEMA_VERSION  3
+```
+
+---
+
+*Erstellt: 2026-06-07 · Nachträge: 2026-06-09 · Stabilisierungsrunde nach Phase 3E · APP_VERSION 1.3.7*

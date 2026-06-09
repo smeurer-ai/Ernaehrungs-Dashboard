@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
-**Zuletzt aktualisiert:** 2026-06-07
-**Stand:** Stabilisierungsrunde nach Phase 3E abgeschlossen · Phase 5 als nächstes  
+**Zuletzt aktualisiert:** 2026-06-09
+**Stand:** Stabilisierungsrunde + Mobile-Test-Nachträge abgeschlossen · Phase 5 als nächstes  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `master` · Stabilisierungsrunde gemerged (PR #4)
-**APP_VERSION:** `1.3.5` · **SCHEMA_VERSION:** `3`
+**Branch:** `master` · Stabilisierungsrunde gemerged (PR #4 · #5 · #6)
+**APP_VERSION:** `1.3.7` · **SCHEMA_VERSION:** `3`
 
 ---
 
@@ -26,6 +26,7 @@
 | **Phase 4 — Rezepte** | ✅ | 8 Initialrezepte mit Zutaten/Schritten; expandierbare Karten; eigene Rezepte anlegen/bearbeiten/löschen; Schema v3 (recipesCustom + recipePhotos); Export/Import |
 | **Phase 3E — OFD + Barcode** | ✅ | OFD-Suche + Barcode-Scanner, Leucin-Schätzung aus Produktkategorie, MPS-Tagesübersicht (v1.3.1); Barcode-UX-Fix (v1.3.2) |
 | **Stabilisierungsrunde nach 3E** | ✅ | MPS-Slot-Logik, Makro-Ist/Ziel P/KH/F, OFD-Robustheit, Favoriten-Picker, Favorit im Edit-Modus, Rezepte→Tracker (v1.3.3–1.3.5) |
+| **Nachträge Mobile-Test** | ✅ | DayType-Sync Heute↔Tracker, OFD-Favoriten-Fix, App-Version sichtbar, Schriftgrößen 50+ (v1.3.6–1.3.7) |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung |
 
@@ -43,7 +44,10 @@
 - ✅ Export/Import JSON, Backup-Erinnerung
 - ✅ **OFD-Suche + Barcode:** 9s Timeout, 1 Retry, Relevanz-Ranking, differenzierte Fehlermeldungen; Leucin-Schätzung aus Produktkategorie; MPS-Felder in TrackedFood
 - ✅ **MPS-Tagesübersicht:** „X von Y Mahlzeiten MPS-wirksam" (Protein-Baseline; OFD-Leucin nur additiv)
-- ✅ **Favoriten-Picker:** Suchfeld, max 8 Treffer, zuletzt-aktualisiert als Default; „Als Favorit speichern" auch im Edit-Modus mit Duplikat-Check
+- ✅ **Favoriten-Picker:** Suchfeld, max 8 Treffer, zuletzt-aktualisiert als Default; „Als Favorit speichern" auch im Edit-Modus mit Duplikat-Check; OFD-Favoriten zuverlässig (kein stilles Reset mehr)
+- ✅ **DayType-Sync:** Heute-Tab und Tracker-Tab teilen denselben `uiState` über `App` als Single Source of Truth — kein Desync mehr
+- ✅ **Schriftgrößen 50+:** Lesbarkeit für Zielgruppe Frauen 50+ verbessert; zentrale Anpassungen in `theme.js`; Bottom-Nav, Labels, Chips, Buttons, Tags alle größer
+- ✅ **App-Version:** `v1.3.7 · Schema 3` im Profil-Tab → Daten-Management sichtbar
 
 ---
 
@@ -168,6 +172,7 @@ Bei neuen IndexedDB-Stores:
 | Favoriten-Duplikat-Check | `trim().toLowerCase()`-Vergleich in `FoodEntryModal.handleSave` — kein zweiter Favorit wenn Name identisch |
 | Rezept→Tracker gramm | `gramm=100` technischer Platzhalter (kein Gesamtgewicht bekannt); skalierte Makros direkt gespeichert; Einheitensystem folgt |
 | Rezept→Tracker foodRef | `initial-recipe:<id>` für Initialrezepte · `recipe:<id>` für eigene Rezepte |
+| DayType Single Source of Truth | `useUiState()` nur in `App`; `HeuteTab` bekommt `dayType`/`trainingTime`/`trainingDurationMin` als Props und meldet Änderungen via `onUiStateUpdate` zurück — kein zweites `useUiState()` in Kindkomponenten |
 | `isMainMealSlot()` | Substring-Matching (`toLowerCase().includes()`), nicht exakte Set-Prüfung — robust für neue Slot-Namen |
 | `rateMealProtein()` Schwellen | Hauptmahlzeit: 30/20g · Snack: 15/10g · Basis: 3g Leucin ≈ 30g hochwertiges Protein |
 | Produktleitfragen | Beide müssen Ja sein: Muskelerhalt/Fettabbau UND MPS im Alltag |
@@ -226,7 +231,9 @@ Ausführen: `npm test` im Projekt-Root.
 6. ~~**Phase 4 — Rezepte**~~ ✅ erledigt (v1.3.0) — 8 Initialrezepte, eigene Rezepte, Schema v3
 7. ~~**Phase 3E**~~ ✅ erledigt (v1.3.2) — OFD-Suche + Barcode-Scanner, Leucin-Schätzung, MPS-Tagesübersicht, Barcode-UX-Fix
 8. ~~**Stabilisierungsrunde nach 3E**~~ ✅ erledigt (v1.3.3–1.3.5, PR #4) — MPS-Logik, Makro-Ist/Ziel, OFD-Robustheit, Favoriten-Picker, Favorit im Edit-Modus, Rezepte→Tracker
-9. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge
+9. ~~**Nachträge Mobile-Test**~~ ✅ erledigt (v1.3.6–1.3.7, PR #5 + #6) — DayType-Sync, OFD-Favoriten, App-Version, Schriftgrößen 50+
+10. **Rezept-Makros aus Zutaten** — Design-Spec ausstehend; eigener Branch/Plan vor Implementierung
+11. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge
 
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
@@ -253,4 +260,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-07 · APP_VERSION 1.3.5 · SCHEMA_VERSION 3 · Stabilisierungsrunde nach Phase 3E abgeschlossen*
+*Zuletzt aktualisiert: 2026-06-09 · APP_VERSION 1.3.7 · SCHEMA_VERSION 3 · Stabilisierungsrunde + Mobile-Test-Nachträge abgeschlossen*
