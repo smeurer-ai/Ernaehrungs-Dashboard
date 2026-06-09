@@ -46,7 +46,7 @@ function initForm(recipe) {
   };
 }
 
-function validate(form) {
+function validate(form, computedMacros) {
   const errors = [];
   if (!form.name.trim())
     errors.push('Name ist Pflicht.');
@@ -61,6 +61,8 @@ function validate(form) {
       errors.push('KH muss eine Zahl ≥ 0 sein.');
     if (form.fat === '' || isNaN(Number(form.fat)) || Number(form.fat) < 0)
       errors.push('Fett muss eine Zahl ≥ 0 sein.');
+  } else if (form.macroMode === 'ingredients' && !computedMacros) {
+    errors.push('Keine berechenbaren Makros vorhanden. Bitte Zutaten-Makros (kcal, P, KH, F) für mindestens eine Zutat ergänzen oder auf "Manuell" wechseln.');
   }
   if (!form.steps.some(s => s.trim()))
     errors.push('Mindestens 1 Zubereitungsschritt ist Pflicht.');
@@ -179,7 +181,7 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
   }
 
   function handleSave() {
-    const errs = validate(form);
+    const errs = validate(form, computedMacros);
     if (errs.length) { setErrors(errs); return; }
     setErrors([]);
 
@@ -209,11 +211,11 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
             unit:   ing.unit || 'g',
             isMain: !!ing.isMain,
           };
-          if (ing.kcal100 !== '') {
-            base.kcal100 = Number(ing.kcal100) || 0;
-            base.p100    = Number(ing.p100)    || 0;
-            base.c100    = Number(ing.c100)    || 0;
-            base.f100    = Number(ing.f100)    || 0;
+          if (ing.kcal100 !== '' && ing.p100 !== '' && ing.c100 !== '' && ing.f100 !== '') {
+            base.kcal100 = Number(ing.kcal100);
+            base.p100    = Number(ing.p100);
+            base.c100    = Number(ing.c100);
+            base.f100    = Number(ing.f100);
           }
           if (ing.grammEquivalent !== '') base.grammEquivalent = Number(ing.grammEquivalent);
           if (ing.sourceRef)              base.sourceRef       = ing.sourceRef;
