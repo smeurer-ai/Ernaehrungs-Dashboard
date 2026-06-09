@@ -28,12 +28,12 @@ export function DayLogEntry({ entry, onDelete, onEdit }) {
           whiteSpace: 'nowrap',
         }}>
           ${entry.foodName}
-          <span style=${{ fontSize: '11px', color: COLORS.textMuted, fontWeight: 400, marginLeft: '6px' }}>
+          <span style=${{ fontSize: '12px', color: COLORS.textMuted, fontWeight: 400, marginLeft: '6px' }}>
             ${entry.gramm}g
           </span>
         </div>
         <div style=${{
-          fontSize: '11px',
+          fontSize: '12px',
           color: COLORS.textMuted,
           fontFamily: FONTS.mono,
           marginTop: '2px',
@@ -48,8 +48,8 @@ export function DayLogEntry({ entry, onDelete, onEdit }) {
             background: 'transparent',
             border: '1px solid #333',
             borderRadius: '6px',
-            padding: '4px 8px',
-            fontSize: '11px',
+            padding: '6px 10px',
+            fontSize: '13px',
             color: COLORS.textMuted,
             cursor: 'pointer',
             fontFamily: FONTS.mono,
@@ -62,8 +62,8 @@ export function DayLogEntry({ entry, onDelete, onEdit }) {
             background: 'transparent',
             border: '1px solid #3a1515',
             borderRadius: '6px',
-            padding: '4px 8px',
-            fontSize: '11px',
+            padding: '6px 10px',
+            fontSize: '13px',
             color: '#e05c5c',
             cursor: 'pointer',
             fontFamily: FONTS.mono,
