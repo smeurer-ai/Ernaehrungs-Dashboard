@@ -118,6 +118,14 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
     setIngOffSearchIdx(null);
   }, [open, recipe]);
 
+  // Neues Rezept: macroMode automatisch auf 'ingredients' wechseln
+  // wenn erstmals berechenbare Zutaten-Makros vorliegen
+  useEffect(() => {
+    if (computedMacros && form.macroMode === 'manual' && !recipe?.macroMode) {
+      set('macroMode', 'ingredients');
+    }
+  }, [computedMacros]);
+
   function set(key, val) { setForm(f => ({ ...f, [key]: val })); }
 
   function setIngredient(i, key, val) {
