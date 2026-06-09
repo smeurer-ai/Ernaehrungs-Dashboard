@@ -43,9 +43,8 @@ export function RecipeToTrackerModal({ open, recipe, onClose, onSave }) {
       mealSlot: slot,
       foodName: recipe.name,
       foodRef: isInitial ? `initial-recipe:${recipe.id}` : `recipe:${recipe.id}`,
-      // gramm=100 ist ein technischer Platzhalter (kein Gesamtgewicht bekannt).
-      // Skalierte Makros werden direkt gespeichert. Einheitensystem folgt später.
-      gramm: 100,
+      // gramm: echtes Portionsgewicht wenn aus Zutaten berechenbar, sonst 100g-Platzhalter.
+      gramm: scaled.grammPerPortion ?? 100,
       kcal: scaled.kcal,
       p: scaled.p,
       c: scaled.c,
