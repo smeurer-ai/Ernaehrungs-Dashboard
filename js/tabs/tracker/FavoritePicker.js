@@ -14,7 +14,7 @@ export function FavoritePicker({ favorites, onSelect }) {
   if (favorites.length === 0) {
     return html`
       <div style=${{
-        fontSize: '11px',
+        fontSize: '13px',
         color: COLORS.textMuted,
         fontFamily: FONTS.mono,
         padding: '6px 0',
@@ -47,7 +47,7 @@ export function FavoritePicker({ favorites, onSelect }) {
         border: items.length > 0 ? '1px solid #2a2a2a' : 'none',
       }}>
         ${items.length === 0 && query.trim() && html`
-          <div style=${{ fontSize: '11px', color: COLORS.textMuted, fontFamily: FONTS.mono, padding: '8px 10px' }}>
+          <div style=${{ fontSize: '13px', color: COLORS.textMuted, fontFamily: FONTS.mono, padding: '8px 10px' }}>
             Kein Favorit gefunden.
           </div>
         `}
@@ -61,22 +61,22 @@ export function FavoritePicker({ favorites, onSelect }) {
               background: 'transparent',
               border: 'none',
               borderTop: i > 0 ? '1px solid #1e1e1e' : 'none',
-              padding: '8px 10px',
+              padding: '10px 10px',
               cursor: 'pointer',
               textAlign: 'left',
             }}
           >
-            <div style=${{ fontSize: '12px', color: COLORS.text, fontWeight: 600, fontFamily: FONTS.sans }}>
+            <div style=${{ fontSize: '14px', color: COLORS.text, fontWeight: 600, fontFamily: FONTS.sans }}>
               ${fav.name}
             </div>
-            <div style=${{ fontSize: '10px', color: COLORS.textMuted, fontFamily: FONTS.mono, marginTop: '1px' }}>
+            <div style=${{ fontSize: '12px', color: COLORS.textMuted, fontFamily: FONTS.mono, marginTop: '2px' }}>
               ${fav.kcal100} kcal · ${fav.p100}g P · ${fav.c100}g KH · ${fav.f100}g F / 100g
             </div>
           </button>
         `)}
         ${hasMore && html`
           <div style=${{
-            fontSize: '10px',
+            fontSize: '12px',
             color: COLORS.textSubtle,
             fontFamily: FONTS.mono,
             padding: '6px 10px',

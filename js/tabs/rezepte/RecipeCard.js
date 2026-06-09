@@ -11,14 +11,14 @@ export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onE
           <span style=${{ fontSize: '22px' }}>${recipe.icon ?? '🍽️'}</span>
           <div>
             <div style=${{ fontSize: '13px', fontWeight: 600, color: COLORS.text }}>${recipe.name}</div>
-            <div style=${{ fontSize: '10px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>
+            <div style=${{ fontSize: '12px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>
               ${recipe.mealSlot}${recipe.prepTime ? ` · ${recipe.prepTime}` : ''}
             </div>
           </div>
         </div>
         <div style=${{ textAlign: 'right' }}>
           <div style=${{ fontSize: '13px', fontWeight: 700, color: COLORS.gold }}>${recipe.protein}g P</div>
-          <div style=${{ fontSize: '10px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>${recipe.kcal} kcal</div>
+          <div style=${{ fontSize: '12px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>${recipe.kcal} kcal</div>
         </div>
       </div>
 
@@ -28,7 +28,7 @@ export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onE
 
           ${recipe.ingredients?.length > 0 && html`
             <div style=${{ marginBottom: '12px' }}>
-              <div style=${{ fontSize: '10px', fontWeight: 700, color: COLORS.textMuted, fontFamily: FONTS.mono, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
+              <div style=${{ fontSize: '12px', fontWeight: 700, color: COLORS.textMuted, fontFamily: FONTS.mono, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
                 ZUTATEN${recipe.servings > 1 ? ` (${recipe.servings} Portionen)` : ''}
               </div>
               ${recipe.ingredients.map((ing, i) => html`
@@ -44,7 +44,7 @@ export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onE
 
           ${recipe.steps?.length > 0 && html`
             <div style=${{ marginBottom: '12px' }}>
-              <div style=${{ fontSize: '10px', fontWeight: 700, color: COLORS.textMuted, fontFamily: FONTS.mono, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
+              <div style=${{ fontSize: '12px', fontWeight: 700, color: COLORS.textMuted, fontFamily: FONTS.mono, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
                 ZUBEREITUNG
               </div>
               ${recipe.steps.map((step, i) => html`
@@ -58,14 +58,14 @@ export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onE
 
           ${recipe.tip && html`
             <div style=${{ background: COLORS.surfaceDeep, borderRadius: '8px', padding: '10px 12px', marginBottom: '12px' }}>
-              <div style=${{ fontSize: '11px', color: COLORS.textMuted, lineHeight: 1.6 }}>
+              <div style=${{ fontSize: '13px', color: COLORS.textMuted, lineHeight: 1.6 }}>
                 <span style=${{ color: COLORS.gold, fontWeight: 600 }}>Tipp: </span>${recipe.tip}
               </div>
             </div>
           `}
 
           <!-- Makro-Leiste -->
-          <div style=${{ display: 'flex', gap: '12px', fontFamily: FONTS.mono, fontSize: '11px' }}>
+          <div style=${{ display: 'flex', gap: '12px', fontFamily: FONTS.mono, fontSize: '13px' }}>
             <span style=${{ color: COLORS.gold, fontWeight: 700 }}>${recipe.kcal} kcal</span>
             <span style=${{ color: '#a8d8a8' }}>${recipe.protein}g P</span>
             <span style=${{ color: '#a8c8e8' }}>${recipe.carbs}g KH</span>

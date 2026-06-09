@@ -17,12 +17,12 @@ export function MealPlanEntry({ meal, consumedMacros }) {
           <span style=${{ fontSize: '18px' }}>${meal.icon}</span>
           <div>
             <div style=${{ fontSize: '13px', fontWeight: 600, color: COLORS.text }}>${meal.label}</div>
-            <div style=${{ fontSize: '10px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>${meal.time}</div>
+            <div style=${{ fontSize: '12px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>${meal.time}</div>
           </div>
         </div>
         <div style=${{ textAlign: 'right' }}>
           <div style=${{ fontSize: '14px', fontWeight: 700, color: COLORS.gold, fontFamily: FONTS.display }}>${meal.kcal}</div>
-          <div style=${{ fontSize: '9px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>kcal</div>
+          <div style=${{ fontSize: '11px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>kcal</div>
         </div>
       </div>
       <div style=${{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
@@ -37,13 +37,13 @@ export function MealPlanEntry({ meal, consumedMacros }) {
         `)}
       </div>
       ${meal.note && html`
-        <div style=${{ fontSize: '10px', color: COLORS.textSubtle, fontFamily: FONTS.mono, borderTop: '1px solid #1e1e1e', paddingTop: '6px', marginTop: '4px' }}>
+        <div style=${{ fontSize: '12px', color: COLORS.textSubtle, fontFamily: FONTS.mono, borderTop: '1px solid #1e1e1e', paddingTop: '6px', marginTop: '4px' }}>
           ${meal.note}
         </div>
       `}
       ${consumedMacros !== undefined && html`
         <div style=${{
-          fontSize: '11px',
+          fontSize: '12px',
           fontFamily: FONTS.mono,
           marginTop: '6px',
           borderTop: '1px solid #1e1e1e',
