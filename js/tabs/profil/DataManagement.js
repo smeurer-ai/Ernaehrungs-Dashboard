@@ -1,6 +1,7 @@
 import { html, useState } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { exportAll, importAll } from '../../storage/exportImport.js';
+import { APP_VERSION, SCHEMA_VERSION } from '../../version.js';
 
 export function DataManagement({ settings, onSettingsUpdate }) {
   const [importing, setImporting] = useState(false);
@@ -64,6 +65,9 @@ export function DataManagement({ settings, onSettingsUpdate }) {
           ${importStatus.message}
         </div>
       `}
+      <div style=${{ marginTop: '14px', fontSize: '11px', color: COLORS.textSubtle, fontFamily: FONTS.mono, textAlign: 'right' }}>
+        v${APP_VERSION} · Schema ${SCHEMA_VERSION}
+      </div>
     </div>
   `;
 }

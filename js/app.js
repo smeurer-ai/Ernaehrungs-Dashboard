@@ -73,7 +73,17 @@ function App() {
 
   function renderTab() {
     switch (activeTab) {
-      case 'heute':   return html`<${HeuteTab} profile=${profile} calculated=${calculated} />`;
+      case 'heute': {
+        const effectiveDurationMin = uiState.preferredTrainingDurationMin ?? profile?.trainingDurationMin ?? 60;
+        return html`<${HeuteTab}
+          profile=${profile}
+          calculated=${calculated}
+          dayType=${uiState.preferredDayType}
+          trainingTime=${uiState.preferredTrainingTime}
+          trainingDurationMin=${effectiveDurationMin}
+          onUiStateUpdate=${updateUiState}
+        />`;
+      }
       case 'tracker': return html`
         <${TrackerTab}
           dayType=${uiState.preferredDayType}

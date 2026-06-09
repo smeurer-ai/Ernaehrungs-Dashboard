@@ -4,19 +4,16 @@ import { DaySummary } from './DaySummary.js';
 import { MealPlanList } from './MealPlanList.js';
 import { HydrationCard } from './HydrationCard.js';
 import { MpsSummaryCard } from './MpsSummaryCard.js';
-import { useUiState } from '../../hooks/useUiState.js';
 import { useLog } from '../../hooks/useLog.js';
 import { sumConsumed, groupMacrosBySlot } from '../../calc/tracker.js';
 import { S, COLORS } from '../../ui/theme.js';
 
-export function HeuteTab({ profile, calculated }) {
-  const [uiState, updateUiState] = useUiState();
-  const { preferredDayType: dayType, preferredTrainingTime: trainingTime } = uiState;
+// dayType/trainingTime/trainingDurationMin kommen von App (single source of truth).
+// HeuteTab ruft useUiState() NICHT selbst auf — sonst gibt es zwei unabhängige
+// React-States die nur über localStorage verbunden wären und TrackerTab würde
+// den geänderten DayType nie mitbekommen.
+export function HeuteTab({ profile, calculated, dayType, trainingTime, trainingDurationMin, onUiStateUpdate }) {
   const wakeUpTime = profile?.wakeUpTime;
-
-  // Tagesauswahl (uiState) hat Vorrang vor Profil-Default; Fallback 60 Min
-  const effectiveDurationMin =
-    uiState.preferredTrainingDurationMin ?? profile?.trainingDurationMin ?? 60;
 
   const today = new Date().toISOString().split('T')[0];
   const { entries, loading } = useLog(today, { dayType, trainingTime });
@@ -40,10 +37,10 @@ export function HeuteTab({ profile, calculated }) {
       <${DayTypeSwitch}
         dayType=${dayType}
         trainingTime=${trainingTime}
-        trainingDurationMin=${effectiveDurationMin}
-        onDayTypeChange=${d => updateUiState({ preferredDayType: d })}
-        onTrainingTimeChange=${t => updateUiState({ preferredTrainingTime: t })}
-        onTrainingDurationChange=${d => updateUiState({ preferredTrainingDurationMin: d })}
+        trainingDurationMin=${trainingDurationMin}
+        onDayTypeChange=${d => onUiStateUpdate({ preferredDayType: d })}
+        onTrainingTimeChange=${t => onUiStateUpdate({ preferredTrainingTime: t })}
+        onTrainingDurationChange=${d => onUiStateUpdate({ preferredTrainingDurationMin: d })}
       />
       <${DaySummary} macros=${macros} consumed=${consumed} />
       <div style=${S.cardTitle}>Mahlzeitenplan</div>
@@ -53,7 +50,7 @@ export function HeuteTab({ profile, calculated }) {
         macros=${macros}
         consumedBySlot=${consumedBySlot}
         wakeUpTime=${wakeUpTime}
-        trainingDurationMin=${effectiveDurationMin}
+        trainingDurationMin=${trainingDurationMin}
       />
       <${HydrationCard} dayType=${dayType} trainingTime=${trainingTime} />
       <${MpsSummaryCard}
@@ -61,7 +58,7 @@ export function HeuteTab({ profile, calculated }) {
         dayType=${dayType}
         trainingTime=${trainingTime}
         wakeUpTime=${wakeUpTime}
-        trainingDurationMin=${effectiveDurationMin}
+        trainingDurationMin=${trainingDurationMin}
       />
     </div>
   `;

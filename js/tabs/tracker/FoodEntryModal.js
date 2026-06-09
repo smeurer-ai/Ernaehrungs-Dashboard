@@ -110,7 +110,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
     setC100(String(product.c100));
     setF100(String(product.f100));
     setOffData({ categoriesTags: product.categoriesTags, offCode: product.offCode });
-    setSaveFav(false);
+    // saveFav NICHT zurücksetzen — Nutzerin soll selbst entscheiden ob Favorit gespeichert wird
   };
 
   // Live-Vorschau der Makros
