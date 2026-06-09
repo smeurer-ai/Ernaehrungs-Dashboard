@@ -1,19 +1,110 @@
+export const UNIT_GRAM_DEFAULTS = {
+  'ml':      1.0,
+  'EL':      15,
+  'TL':       5,
+  'Stk':     null,
+  'Packung': null,
+  'Scheibe': 25,
+  'Dose':    400,
+  'Portion': null,
+};
+
+/**
+ * Berechnet Makros einer einzelnen Zutat.
+ * Gibt null zurück wenn Makros oder Gramm-Äquivalent fehlen.
+ */
+export function calcIngredientMacros(ingredient) {
+  const { amount, unit, kcal100, p100, c100, f100, grammEquivalent } = ingredient;
+  if (kcal100 == null || p100 == null || c100 == null || f100 == null) return null;
+
+  let gramm;
+  if (unit === 'g') {
+    gramm = amount;
+  } else if (unit === 'ml') {
+    gramm = amount * 1.0;
+  } else {
+    const equiv = grammEquivalent ?? UNIT_GRAM_DEFAULTS[unit] ?? null;
+    if (equiv == null) return null;
+    gramm = amount * equiv;
+  }
+
+  const factor = gramm / 100;
+  return {
+    kcal:  Math.round((kcal100 ?? 0) * factor),
+    p:     Math.round((p100   ?? 0) * factor * 10) / 10,
+    c:     Math.round((c100   ?? 0) * factor * 10) / 10,
+    f:     Math.round((f100   ?? 0) * factor * 10) / 10,
+    gramm: Math.round(gramm),
+  };
+}
+
+/**
+ * Summiert Makros aller Zutaten mit bekannten Makros.
+ * Gibt null zurück wenn keine Zutat Makros hat.
+ */
+export function calcRecipeMacrosFromIngredients(ingredients) {
+  let kcal = 0, protein = 0, carbs = 0, fat = 0, totalGramm = 0;
+  let countWith = 0, countWithout = 0;
+
+  for (const ing of ingredients) {
+    const m = calcIngredientMacros(ing);
+    if (m == null) {
+      countWithout++;
+    } else {
+      kcal       += m.kcal;
+      protein    += m.p;
+      carbs      += m.c;
+      fat        += m.f;
+      totalGramm += m.gramm;
+      countWith++;
+    }
+  }
+
+  if (countWith === 0) return null;
+
+  return {
+    kcal:         Math.round(kcal),
+    protein:      Math.round(protein * 10) / 10,
+    carbs:        Math.round(carbs   * 10) / 10,
+    fat:          Math.round(fat     * 10) / 10,
+    totalGramm:   Math.round(totalGramm),
+    missingCount: countWithout,
+  };
+}
+
+/**
+ * Liefert effektive Makros eines Rezepts.
+ * Abstrahiert über macroMode — Aufrufer muss macroMode nicht kennen.
+ */
+export function getRecipeMacros(recipe) {
+  if (recipe.macroMode === 'ingredients') {
+    const calc = calcRecipeMacrosFromIngredients(recipe.ingredients ?? []);
+    if (calc) return calc;
+  }
+  return {
+    kcal:        recipe.kcal    ?? 0,
+    protein:     recipe.protein ?? 0,
+    carbs:       recipe.carbs   ?? 0,
+    fat:         recipe.fat     ?? 0,
+    totalGramm:  null,
+    missingCount: 0,
+  };
+}
+
 /**
  * Skaliert Rezept-Makros auf eine gegebene Portionszahl.
- *
- * Die gespeicherten Makros (kcal, protein, carbs, fat) eines Rezepts beziehen
- * sich immer auf das Gesamtrezept (alle recipe.servings Portionen).
- *
- * @param {{ kcal: number, protein: number, carbs: number, fat: number, servings?: number }} recipe
- * @param {number} portions - Anzahl der zu loggenden Portionen
- * @returns {{ kcal: number, p: number, c: number, f: number }}
+ * Bestehende Aufrufer sind kompatibel (additiv: grammPerPortion ist neues Feld).
  */
 export function scaleRecipeMacros(recipe, portions) {
+  const macros = getRecipeMacros(recipe);
   const factor = portions / (recipe.servings ?? 1);
   return {
-    kcal: Math.round(recipe.kcal * factor),
-    p:    Math.round(recipe.protein * factor * 10) / 10,
-    c:    Math.round(recipe.carbs   * factor * 10) / 10,
-    f:    Math.round(recipe.fat     * factor * 10) / 10,
+    kcal: Math.round(macros.kcal    * factor),
+    p:    Math.round(macros.protein * factor * 10) / 10,
+    c:    Math.round(macros.carbs   * factor * 10) / 10,
+    f:    Math.round(macros.fat     * factor * 10) / 10,
+    grammPerPortion: macros.totalGramm != null
+      ? Math.round(macros.totalGramm / (recipe.servings ?? 1) * portions)
+      : null,
   };
 }

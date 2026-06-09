@@ -17,7 +17,10 @@ export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onE
           </div>
         </div>
         <div style=${{ textAlign: 'right' }}>
-          <div style=${{ fontSize: '13px', fontWeight: 700, color: COLORS.gold }}>${recipe.protein}g P</div>
+          <div style=${{ fontSize: '13px', fontWeight: 700, color: COLORS.gold, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
+            <span>${recipe.protein}g P</span>
+            ${recipe.macroMode === 'ingredients' ? html`<span title="Makros aus Zutaten berechnet" style=${{ fontSize: '10px', opacity: 0.7 }}>⚡</span>` : null}
+          </div>
           <div style=${{ fontSize: '12px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>${recipe.kcal} kcal</div>
         </div>
       </div>
