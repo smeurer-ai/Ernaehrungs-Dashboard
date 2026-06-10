@@ -10,11 +10,13 @@ import {
   getAllLogs,
   getAllWeeks,
   getAllFavoriteFoods,
+  getAllMeals,
   saveLogEntry,
   saveWeek,
   getAllCustomRecipes,
   saveCustomRecipe,
   saveFavoriteFood,
+  saveMeal,
 } from './indexeddb.js';
 import { APP_VERSION, SCHEMA_VERSION } from '../version.js';
 
@@ -33,11 +35,12 @@ export async function exportAll() {
   const settings = { ...loadSettings(), claudeApiKey: null };
   const uiState = loadUiState();
 
-  const [log, week, recipesCustom, foodsCustom] = await Promise.all([
+  const [log, week, recipesCustom, foodsCustom, meals] = await Promise.all([
     getAllLogs(),
     getAllWeeks(),
     getAllCustomRecipes(),
     getAllFavoriteFoods(),
+    getAllMeals(),
   ]);
 
   const exportData = {
@@ -52,6 +55,7 @@ export async function exportAll() {
       week,
       recipesCustom,
       foodsCustom,
+      meals,
     },
   };
 
@@ -160,6 +164,13 @@ export async function importAll(file, options = { mode: 'merge' }) {
     if (Array.isArray(data.foodsCustom) && data.foodsCustom.length > 0) {
       for (const food of data.foodsCustom) {
         await saveFavoriteFood(food);
+      }
+    }
+
+    // meals (Favoriten-Mahlzeiten) nach IndexedDB schreiben
+    if (Array.isArray(data.meals) && data.meals.length > 0) {
+      for (const meal of data.meals) {
+        await saveMeal(meal);
       }
     }
 

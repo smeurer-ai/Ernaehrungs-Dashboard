@@ -7,8 +7,10 @@ vi.mock('../../../js/storage/indexeddb.js', () => ({
   getAllFavoriteFoods: vi.fn(),
   saveLogEntry:       vi.fn(),
   saveWeek:           vi.fn(),
+  getAllMeals:        vi.fn(),
   saveCustomRecipe:   vi.fn(),
   saveFavoriteFood:   vi.fn(),
+  saveMeal:           vi.fn(),
 }));
 
 vi.mock('../../../js/storage/localStorage.js', () => ({
@@ -46,6 +48,13 @@ const TEST_WEEK = {
   createdAt: 1000, updatedAt: 1000,
 };
 
+const TEST_MEAL = {
+  id: 'meal-1', name: 'Mein Frühstücksquark', defaultSlot: 'Frühstück',
+  items: [{ foodRef: 'fav-1', foodName: 'Magerquark', gramm: 250, kcal: 168, p: 30, c: 10, f: 0.5 }],
+  totalMacros: { kcal: 168, p: 30, c: 10, f: 0.5 },
+  lastUsed: null, createdAt: 1000, updatedAt: 1000,
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(idb.getAllLogs).mockResolvedValue([]);
@@ -56,6 +65,48 @@ beforeEach(() => {
   vi.mocked(idb.saveWeek).mockResolvedValue(undefined);
   vi.mocked(idb.saveCustomRecipe).mockResolvedValue(undefined);
   vi.mocked(idb.saveFavoriteFood).mockResolvedValue(undefined);
+  vi.mocked(idb.getAllMeals).mockResolvedValue([]);
+  vi.mocked(idb.saveMeal).mockResolvedValue(undefined);
+});
+
+describe('exportAll / importAll — meals (Favoriten-Mahlzeiten)', () => {
+  it('enthält data.meals als leeres Array wenn keine Mahlzeiten vorhanden', async () => {
+    const blob = await exportAll();
+    const json = JSON.parse(await blob.text());
+    expect(Array.isArray(json.data.meals)).toBe(true);
+    expect(json.data.meals).toHaveLength(0);
+  });
+
+  it('enthält gespeicherte Mahlzeiten in data.meals', async () => {
+    vi.mocked(idb.getAllMeals).mockResolvedValue([TEST_MEAL]);
+    const blob = await exportAll();
+    const json = JSON.parse(await blob.text());
+    expect(json.data.meals).toHaveLength(1);
+    expect(json.data.meals[0].name).toBe('Mein Frühstücksquark');
+  });
+
+  it('ruft saveMeal für jede Mahlzeit in data.meals auf', async () => {
+    const file = new Blob([JSON.stringify({
+      exportedAt: Date.now(), appVersion: '1.6.0', schemaVersion: 3,
+      data: { profile: null, settings: null, uiState: null, meals: [TEST_MEAL] },
+    })], { type: 'application/json' });
+
+    await importAll(file);
+
+    expect(vi.mocked(idb.saveMeal)).toHaveBeenCalledOnce();
+    expect(vi.mocked(idb.saveMeal)).toHaveBeenCalledWith(TEST_MEAL);
+  });
+
+  it('Altdaten-Export ohne meals-Feld importiert ohne Fehler', async () => {
+    const file = new Blob([JSON.stringify({
+      exportedAt: Date.now(), appVersion: '1.4.1', schemaVersion: 3,
+      data: { profile: null, settings: null, uiState: null },
+    })], { type: 'application/json' });
+
+    const result = await importAll(file);
+    expect(result.ok).toBe(true);
+    expect(vi.mocked(idb.saveMeal)).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------

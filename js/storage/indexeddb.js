@@ -268,3 +268,34 @@ export async function deleteCustomRecipe(id) {
   if (!existing) return;
   await db.put('recipesCustom', { ...existing, deletedAt: Date.now() });
 }
+
+// ---------------------------------------------------------------------------
+// meals-Store (Favoriten-Mahlzeiten — Store existiert seit Schema v2)
+// ---------------------------------------------------------------------------
+
+export async function getAllMeals() {
+  const db = await openDb();
+  const all = await db.getAll('meals');
+  return all
+    .filter(m => !m.deletedAt)
+    .sort((a, b) => (b.lastUsed ?? 0) - (a.lastUsed ?? 0) || b.updatedAt - a.updatedAt);
+}
+
+export async function saveMeal(meal) {
+  const db = await openDb();
+  const now = Date.now();
+  const existing = await db.get('meals', meal.id);
+  await db.put('meals', {
+    ...meal,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+    deviceId: getDeviceId(),
+  });
+}
+
+export async function deleteMeal(id) {
+  const db = await openDb();
+  const existing = await db.get('meals', id);
+  if (!existing) return;
+  await db.put('meals', { ...existing, deletedAt: Date.now() });
+}
