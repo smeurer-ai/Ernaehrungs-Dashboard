@@ -3,13 +3,16 @@ import { COLORS, FONTS } from './theme.js';
 
 export function Modal({ open, onClose, title, children }) {
   if (!open) return null;
+  // Mobile: Bottom-Sheet (Daumen-Reichweite) · Desktop: zentriert
+  const isWide = typeof window !== 'undefined'
+    && window.matchMedia('(min-width: 600px)').matches;
   return html`
     <div style=${{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-      zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center'
+      zIndex: 1000, display: 'flex', alignItems: isWide ? 'center' : 'flex-end', justifyContent: 'center'
     }} onClick=${e => e.target === e.currentTarget && onClose()}>
       <div style=${{
-        background: '#181818', borderRadius: '16px 16px 0 0',
+        background: '#181818', borderRadius: isWide ? '16px' : '16px 16px 0 0',
         width: '100%', maxWidth: '480px', maxHeight: '85vh',
         overflow: 'auto', padding: '20px 18px 32px'
       }}>

@@ -1,16 +1,20 @@
 import { html, useState, useEffect, useRef } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { fetchOFFByBarcode, normalizeBarcode } from '../../api/openFoodFacts.js';
+import { findFavoriteByBarcode } from '../../calc/favorites.js';
 
 /**
  * Barcode-Eingabe-Panel mit optionalem Kamera-Scan via BarcodeDetector-API.
+ * Eigene Lebensmittel mit Barcode werden VOR Open Food Facts gefunden.
  *
  * @param {{
  *   onSelect: (product: import('../../api/openFoodFacts.js').OFFProduct) => void,
+ *   onSelectFavorite?: (food: object) => void,  // Treffer aus eigenen Lebensmitteln
+ *   favorites?: array,
  *   onClose: () => void,
  * }} props
  */
-export function BarcodePanel({ onSelect, onClose }) {
+export function BarcodePanel({ onSelect, onSelectFavorite, favorites = [], onClose }) {
   const [barcode, setBarcode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -36,11 +40,12 @@ export function BarcodePanel({ onSelect, onClose }) {
     setScanning(false);
   }
 
-  async function handleManualSearch() {
-    const code = normalizeBarcode(barcode);
-    if (!code) return;
-    if (code.length < 8) {
-      setError('Barcode bitte vollständig eingeben.');
+  // Erst eigene Lebensmittel prüfen, dann Open Food Facts
+  async function lookupBarcode(code) {
+    const fav = findFavoriteByBarcode(favorites, code);
+    if (fav && onSelectFavorite) {
+      onSelectFavorite(fav);
+      onClose();
       return;
     }
     setLoading(true);
@@ -50,10 +55,20 @@ export function BarcodePanel({ onSelect, onClose }) {
       onSelect(product);
       onClose();
     } catch (e) {
-      setError(e.message || 'Produkt nicht gefunden.');
+      setError(`${e.message || 'Produkt nicht gefunden.'} Tipp: Unter „Meine Lebensmittel" kannst Du es mit diesem Barcode selbst anlegen — dann findet der Scan es künftig.`);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleManualSearch() {
+    const code = normalizeBarcode(barcode);
+    if (!code) return;
+    if (code.length < 8) {
+      setError('Barcode bitte vollständig eingeben.');
+      return;
+    }
+    await lookupBarcode(code);
   }
 
   async function handleStartCamera() {
@@ -83,16 +98,7 @@ export function BarcodePanel({ onSelect, onClose }) {
             streamRef.current = null;
             setScanning(false);
             setBarcode(code);
-            setLoading(true);
-            try {
-              const product = await fetchOFFByBarcode(code);
-              onSelect(product);
-              onClose();
-            } catch (e) {
-              setError(e.message || 'Produkt nicht gefunden.');
-            } finally {
-              setLoading(false);
-            }
+            await lookupBarcode(code);
             return;
           }
         } catch { /* Einzelbild-Erkennungsfehler ignorieren */ }
