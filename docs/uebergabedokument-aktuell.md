@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
 **Zuletzt aktualisiert:** 2026-06-10
-**Stand:** Rezept-Zutaten-Suche implementiert (v1.5.0) — **Mobile-Test ausstehend, PR offen** · danach: TS-08, Phase 5  
+**Stand:** v1.5.1 live (Rezept-Zutaten-Suche + TS-08 + Eintragen-und-weitere, PR #9 + #10 gemerged) · als nächstes: Slot-Ziele im Eintrag-Dialog (6a), dann Favoriten-Mahlzeiten  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `feature/rezept-zutaten-suche` — implementiert, Merge erst nach Mobile-Test (Checkliste in Spec 2026-06-10)
-**APP_VERSION:** `1.5.0` · **SCHEMA_VERSION:** `3`
+**Branch:** `master` synchron · lokal getestet von Stephanie (2026-06-10)
+**APP_VERSION:** `1.5.1` · **SCHEMA_VERSION:** `3`
 
 ---
 
@@ -29,7 +29,8 @@
 | **Nachträge Mobile-Test** | ✅ | DayType-Sync Heute↔Tracker, OFD-Favoriten-Fix, App-Version sichtbar, Schriftgrößen 50+ (v1.3.6–1.3.7) |
 | **Rezept-Makros aus Zutaten** | ✅ | `macroMode: 'manual' \| 'ingredients'`; Zutaten optional mit Makros/100g + Gramm-Äquivalent; `calcIngredientMacros`, `calcRecipeMacrosFromIngredients`, `getRecipeMacros`; echtes Portionsgewicht statt 100g-Platzhalter (v1.4.0) — UX gilt als verbesserungswürdig, Überarbeitung geplant |
 | **Sicherheits-/Datenintegritäts-Runde** | ✅ | `poc/` aus Repo entfernt; Export enthielt `log`/`week`/`foodsCustom` **nicht** (Datenverlust bei Backup!) → jetzt vollständig; Import führt Favoriten zusammen; Import-Dialog sagt korrekt „zusammenführen statt ersetzen" (v1.4.1) |
-| **Rezept-Zutaten-Suche** | 🔄 | Zutat-Namensfeld = Suchfeld (Favoriten-Vorschläge + OFD); Status-Zeile pro Zutat mit Klartext-Grund; Gramm-Äquivalent inline mit sichtbarem Default; Bugfixes: Manuell-Modus springt nicht mehr zurück, Favoriten/OFD-Übernahme füllt alle vier Makro-Felder (v1.5.0) — **Mobile-Test ausstehend** |
+| **Rezept-Zutaten-Suche** | ✅ | Zutat-Namensfeld = Suchfeld (Favoriten-Vorschläge + OFD); Status-Zeile pro Zutat mit Klartext-Grund; Gramm-Äquivalent inline mit sichtbarem Default; ●/○-Knopf für Hauptzutat; Bugfixes: Manuell-Modus springt nicht mehr zurück, Favoriten/OFD-Übernahme füllt alle vier Makro-Felder (v1.5.0, PR #9) |
+| **TS-08 + Eintragen-und-weitere** | ✅ | `localDateString()` ersetzt UTC-`toISOString()` an 5 Stellen (Einträge nach Mitternacht am richtigen Tag); Mahlzeit-Dialog: „✓ Eintragen + weitere hinzufügen" speichert und leert das Formular bei erhaltenem Slot (v1.5.1, PR #10) |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung; **Essens-Vorschläge via Claude API** (Rest-Makros + Kühlschrank + Notvorrat als Kontext → konkreter Gericht-Vorschlag; strikt optional mit eigenem API-Key, Wunsch Stephanie 2026-06-10) |
 
@@ -198,6 +199,7 @@ tests/unit/calc/tracker.test.js            29 Tests  (computeMpsSummary, groupMa
 tests/unit/calc/favorites.test.js          10 Tests  (filterFavorites — Task 4, neu)
 tests/unit/calc/recipeTracking.test.js     32 Tests  (scaleRecipeMacros, calcIngredientMacros, calcRecipeMacrosFromIngredients, getRecipeMacros, ingredientMacroStatus)
 tests/unit/calc/mealTemplates.test.js      39 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin, null-Fallbacks)
+tests/unit/calc/dates.test.js               6 Tests  (localDateString — TS-08, lokale Zeit statt UTC)
 tests/unit/security/htmlSecurity.test.js    4 Tests  (CDN-Blocklist + CSP-Härtung)
 tests/unit/storage/migrations.test.js       5 Tests  (Schema v3 Migration)
 tests/unit/storage/indexeddb.test.js        8 Tests  (CRUD recipesCustom — saveCustomRecipe, getAllCustomRecipes, deleteCustomRecipe)
@@ -206,7 +208,7 @@ tests/unit/data/initialRecipes.test.js      8 Tests  (Struktur aller 8 Rezepte)
 tests/unit/calc/leucineFactors.test.js     18 Tests  (Phase 3E: estimateLeucineFactor, computeMpsFields)
 tests/unit/api/openFoodFacts.test.js       25 Tests  (mapOFFProduct, parseOFFSearchResults, normalizeBarcode, rankOFFResults, classifyOFFError — Task 3)
 ──────────────────────────────────────────────────
-Gesamt                                    286 Tests — alle grün (Stand 2026-06-10, v1.5.0)
+Gesamt                                    292 Tests — alle grün (Stand 2026-06-10, v1.5.1)
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -221,7 +223,7 @@ Ausführen: `npm test` im Projekt-Root.
 | TS-05 | IndexedDB-Doppelöffnung (migrations.js + indexeddb.js) | Phase 3B |
 | TS-06 | Toast außerhalb Provider schlägt lautlos fehl | Phase 3B |
 | ~~TS-07~~ | ~~Google Fonts nicht offline-fähig~~ | ✅ erledigt — Fonts lokal unter `assets/fonts/` |
-| TS-08 | `new Date().toISOString()` nutzt UTC → kurz nach Mitternacht falsches Datum | Gemeinsamer Fix HeuteTab + Tracker |
+| ~~TS-08~~ | ~~`new Date().toISOString()` nutzt UTC → kurz nach Mitternacht falsches Datum~~ | ✅ erledigt v1.5.1 — `localDateString()` in `js/calc/dates.js` |
 
 ---
 
@@ -240,17 +242,18 @@ Ausführen: `npm test` im Projekt-Root.
 9. ~~**Nachträge Mobile-Test**~~ ✅ erledigt (v1.3.6–1.3.7, PR #5 + #6) — DayType-Sync, OFD-Favoriten, App-Version, Schriftgrößen 50+
 10. ~~**Rezept-Makros aus Zutaten**~~ ✅ erledigt (v1.4.0) — Spec + Plan unter `docs/superpowers/` (2026-06-09)
 11. ~~**Sicherheits-/Datenintegritäts-Runde**~~ ✅ erledigt (v1.4.1) — vollständiger Export (log/week/foodsCustom), Import-Merge, poc/ entfernt
-12. **Rezept-Zutaten-Suche** 🔄 implementiert (v1.5.0, Spec `2026-06-10-rezept-zutaten-suche.md`) — **Mobile-Test nach Checkliste ausstehend**, danach PR mergen
-13. **TS-08 fixen** — UTC-Datumsfehler (Einträge kurz nach Mitternacht am falschen Tag)
-14. **Tracker: „Speichern + weitere"** — Eintrag-Dialog bleibt nach dem Speichern mit demselben Slot offen; mehrere Lebensmittel pro Mahlzeit ohne Neu-Öffnen (Stephanie, 2026-06-10)
-15. **Favoriten-Mahlzeiten** (Spec-Funktion #21) — Mahlzeit aus mehreren Lebensmitteln zusammenstellen (Zutaten-Suche aus v1.5.0 wiederverwenden), als Favorit in `meals`-Store speichern (existiert leer seit Schema v2), 1-Klick-Eintrag; **Pflicht-Anforderung (Stephanie, 2026-06-10): Slot-Zielwerte aus dem Heute-Tab im Baukasten anzeigen — Ziel / live-Summe der Zutaten / verbleibende Lücke, zum Herumprobieren**; eigene Spec vor Implementierung
+12. ~~**Rezept-Zutaten-Suche**~~ ✅ erledigt (v1.5.0, PR #9, Spec `2026-06-10-rezept-zutaten-suche.md`) — von Stephanie lokal getestet
+13. ~~**TS-08**~~ ✅ erledigt (v1.5.1, PR #10) — `localDateString()`
+14. ~~**Tracker: „Eintragen + weitere"**~~ ✅ erledigt (v1.5.1, PR #10)
+15. **Slot-Ziele im Eintrag-Dialog (6a)** — im Mahlzeit-Dialog unter der Slot-Auswahl anzeigen: Ziel des Slots (kcal/P/KH/F aus Mahlzeitenplan), heute bereits eingetragen, verbleibende Lücke, MPS-Hinweis (~30g Protein für Hauptmahlzeit); aktualisiert sich bei „Eintragen + weitere" (Stephanie, 2026-06-10)
+16. **Favoriten-Mahlzeiten (6b)** (Spec-Funktion #21) — Mahlzeit aus mehreren Lebensmitteln zusammenstellen (Zutaten-Suche aus v1.5.0 wiederverwenden), als Favorit in `meals`-Store speichern (existiert leer seit Schema v2), 1-Klick-Eintrag; **Pflicht-Anforderung (Stephanie, 2026-06-10): Slot-Zielwerte aus dem Heute-Tab im Baukasten anzeigen — Ziel / live-Summe der Zutaten / verbleibende Lücke, zum Herumprobieren**; eigene Spec vor Implementierung
 16. **Eigene Lebensmittel verwalten** (Spec-Funktion #22) — Liste der `foodsCustom` ansehen/bearbeiten/löschen; Felder Marke + Barcode (Fallback wenn OFF Produkt nicht kennt); ⭐-Notvorrat-Markierung (Voraussetzung für Phase-5-Vorschläge) (Stephanie, 2026-06-10: nicht alle Lebensmittel sind in OFF auffindbar)
 17. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge (kann dann auch Favoriten-Mahlzeiten vorschlagen)
 
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
 - PR nach master nach Abschluss
-- Aktuell: `feature/rezept-zutaten-suche` implementiert — Mobile-Test, dann PR mergen
+- Aktuell: `master` synchron auf v1.5.1 — nächster Task (6a) auf neuem Feature-Branch
 
 ---
 
@@ -272,4 +275,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.5.0 · SCHEMA_VERSION 3 · Rezept-Zutaten-Suche implementiert (Mobile-Test ausstehend)*
+*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.5.1 · SCHEMA_VERSION 3 · Rezept-Zutaten-Suche + TS-08 + Eintragen-und-weitere live*
