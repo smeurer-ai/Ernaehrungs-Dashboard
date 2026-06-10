@@ -132,6 +132,30 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         </div>
       </div>
 
+      <!-- Schnellzugriff: Favoriten-Mahlzeiten (6b) + Eigene Lebensmittel (7) -->
+      <div style=${{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+        <button
+          onClick=${() => setMealsModalOpen(true)}
+          style=${{
+            background: 'none', border: `1px solid ${COLORS.gold}55`, borderRadius: '8px',
+            color: COLORS.gold, flex: 1, padding: '10px', fontSize: '12px',
+            cursor: 'pointer', fontFamily: FONTS.mono,
+          }}
+        >
+          ★ Mahlzeiten
+        </button>
+        <button
+          onClick=${() => setFoodsModalOpen(true)}
+          style=${{
+            background: 'none', border: `1px solid ${COLORS.gold}55`, borderRadius: '8px',
+            color: COLORS.gold, flex: 1, padding: '10px', fontSize: '12px',
+            cursor: 'pointer', fontFamily: FONTS.mono,
+          }}
+        >
+          🧺 Lebensmittel
+        </button>
+      </div>
+
       <!-- Log-Liste -->
       ${loading
         ? html`<div style=${{ color: COLORS.textMuted, fontSize: '12px', textAlign: 'center', padding: '24px' }}>Lade…</div>`
@@ -155,30 +179,6 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
           + Mahlzeit eintragen
         </button>
       `}
-
-      <!-- Favoriten-Mahlzeiten (6b) + Eigene Lebensmittel (7) -->
-      <div style=${{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-        <button
-          onClick=${() => setMealsModalOpen(true)}
-          style=${{
-            background: 'none', border: `1px solid ${COLORS.gold}55`, borderRadius: '8px',
-            color: COLORS.gold, flex: 1, padding: '10px', fontSize: '12px',
-            cursor: 'pointer', fontFamily: FONTS.mono,
-          }}
-        >
-          ★ Mahlzeiten
-        </button>
-        <button
-          onClick=${() => setFoodsModalOpen(true)}
-          style=${{
-            background: 'none', border: `1px solid ${COLORS.gold}55`, borderRadius: '8px',
-            color: COLORS.gold, flex: 1, padding: '10px', fontSize: '12px',
-            cursor: 'pointer', fontFamily: FONTS.mono,
-          }}
-        >
-          🧺 Lebensmittel
-        </button>
-      </div>
 
       <!-- Eingabe-Modal -->
       <${FoodEntryModal}
