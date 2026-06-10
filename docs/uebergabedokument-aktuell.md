@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
 **Zuletzt aktualisiert:** 2026-06-10
-**Stand:** v1.8.0 live (Phase 5b: Kühlschrank + Schema v4, PR #14) · als nächstes: 5c (Rezept-Matching) + 5d (Vorschläge)  
+**Stand:** v1.9.0 live — **PHASE 5 KOMPLETT** (PR #15) · alle Phasen vor Phase 6 (AI) erledigt  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `master` synchron · Migration v4 von Stephanie lokal verifiziert (2026-06-10)
-**APP_VERSION:** `1.8.0` · **SCHEMA_VERSION:** `4`
+**Branch:** `master` synchron · Vorschlags-Karte von Stephanie live getestet (2026-06-10)
+**APP_VERSION:** `1.9.0` · **SCHEMA_VERSION:** `4`
 
 ---
 
@@ -35,8 +35,8 @@
 | **Favoriten-Mahlzeiten (6b)** | ✅ | „★ Meine Mahlzeiten" im Tracker: Baukasten (Lebensmittel-Suche, Sticky-Ziel-Panel mit Slot-Ziel/Summe/Lücke/MPS), 1-Tipp-Eintrag mit Slot-Wahl, lastUsed-Sortierung; `meals`-Store + Export/Import; `computeMealTotals`/`mealItemsToTrackedFoods` (v1.6.0, PR #12) |
 | **Eigene Lebensmittel verwalten (7)** | ✅ | „🧺 Lebensmittel" im Tracker (Schnellzugriff-Leiste oben): Liste mit Suche, ⭐-Notvorrat-Toggle, Editor mit Marke + Barcode; Barcode-Scan findet eigene Lebensmittel VOR Open Food Facts (`findFavoriteByBarcode`); Modals auf Desktop zentriert, Mobile weiter Bottom-Sheet (v1.7.0–1.7.2, PR #13) |
 | **Phase 5b — Kühlschrank** | ✅ | Schema **v4** (`fridge`-Store, Migration getestet); „❄ Kühlschrank" im Tracker-Schnellzugriff: Favoriten-Vorschlag/Freitext, optionale Gramm, Entfernen, Leeren; Hook `useFridge`; Export/Import (v1.8.0, PR #14, Spec `2026-06-10-phase-5-kuehlschrank-vorschlaege.md`) |
-| **Phase 5c — Rezept-Matching** | ⏳ | `recipeMatchesFridge` (Hauptzutaten ● vs. Kühlschrank, Substring-Matching) + Filter-Chip „❄ Kühlschrank-passend" im Rezepte-Tab — Spec liegt vor |
-| **Phase 5d — Vorschläge** | ⏳ | `computeGapSuggestions` (Score: Proteindichte + ⭐Notvorrat + ❄Kühlschrank + 🌙Casein abends − Kalorienbremse) + Karte im Heute-Tab ab 17 Uhr bei P-Lücke ≥ 10g — Spec liegt vor |
+| **Phase 5c — Rezept-Matching** | ✅ | `recipeMatchesFridge` (Hauptzutaten ● vs. Kühlschrank, Substring-Matching beidseitig, 7 Tests) + Filter-Chip „❄ Kühlschrank-passend" im Rezepte-Tab (v1.9.0, PR #15) |
+| **Phase 5d — Vorschläge** | ✅ | `computeGapSuggestions` (11 Tests; Score: Proteindichte g P/100kcal + ⭐Notvorrat +30 + ❄Kühlschrank +30 + 🌙Casein abends +20 − Kalorienbremse bei kcal > 1.3×Lücke); GapSuggestions-Karte im Heute-Tab ab 17 Uhr bei P-Lücke ≥ 10g, Top 4 aus Favoriten + Favoriten-Mahlzeiten, Klartext-Badges (v1.9.0, PR #15) |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung; **Essens-Vorschläge via Claude API** (Rest-Makros + Kühlschrank + Notvorrat als Kontext → konkreter Gericht-Vorschlag; strikt optional mit eigenem API-Key, Wunsch Stephanie 2026-06-10) |
 
 ### Was die App aktuell kann
@@ -213,8 +213,10 @@ tests/unit/calc/meals.test.js               8 Tests  (computeMealTotals, mealIte
 tests/unit/data/initialRecipes.test.js      8 Tests  (Struktur aller 8 Rezepte)
 tests/unit/calc/leucineFactors.test.js     18 Tests  (Phase 3E: estimateLeucineFactor, computeMpsFields)
 tests/unit/api/openFoodFacts.test.js       25 Tests  (mapOFFProduct, parseOFFSearchResults, normalizeBarcode, rankOFFResults, classifyOFFError — Task 3)
+tests/unit/calc/matching.test.js            7 Tests  (recipeMatchesFridge — Phase 5c)
+tests/unit/calc/suggestions.test.js        11 Tests  (computeGapSuggestions, isCaseinSource — Phase 5d)
 ──────────────────────────────────────────────────
-Gesamt                                    322 Tests — alle grün (Stand 2026-06-10, v1.8.0)
+Gesamt                                    340 Tests — alle grün (Stand 2026-06-10, v1.9.0)
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -255,14 +257,13 @@ Ausführen: `npm test` im Projekt-Root.
 16. ~~**Favoriten-Mahlzeiten (6b)**~~ ✅ erledigt (v1.6.0, PR #12, Spec `2026-06-10-favoriten-mahlzeiten.md`) — Baukasten mit Sticky-Ziel-Panel, 1-Tipp-Eintrag, Export/Import
 17. ~~**Eigene Lebensmittel verwalten (7)**~~ ✅ erledigt (v1.7.0–1.7.2, PR #13) — inkl. Barcode-Fallback, Schnellzugriff-Leiste, Desktop-Modal-Zentrierung; von Stephanie getestet
 18. ~~**Phase 5a + 5b**~~ ✅ erledigt (v1.8.0, PR #14) — Spec für ganze Phase 5 + Kühlschrank mit Schema v4; Migration von Stephanie verifiziert
-19. **Phase 5c — Rezept-Matching**: `js/calc/matching.js` (`recipeMatchesFridge`, pure + Tests) + Filter-Chip im Rezepte-Tab — Details in Spec 2026-06-10
-20. **Phase 5d — Smarte Vorschläge** (Herzstück): `js/calc/suggestions.js` (`computeGapSuggestions`, pure + Tests) + `GapSuggestions`-Karte im Heute-Tab — Details in Spec 2026-06-10; Ziel-Version 1.9.0
-21. Danach: **Phase 6 — AI** (Claude Vision Foto-Rezepterkennung, Essens-Vorschläge via API; strikt optional/feature-gated)
+19. ~~**Phase 5c + 5d**~~ ✅ erledigt (v1.9.0, PR #15) — Vorschlags-Karte von Stephanie live getestet („Klasse!")
+20. **Phase 6 — AI** (letzte Phase!): Claude API-Key-Management im Profil (nie exportiert), Foto-Rezepterkennung via Claude Vision, Essens-Vorschläge via API (Rest-Makros + Kühlschrank + Notvorrat als Kontext), `apiCache`-Store (Schema v5); strikt optional/feature-gated — ohne Key keine UI, keine Requests; eigene Spec vor Implementierung
 
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
 - PR nach master nach Abschluss
-- Aktuell: `master` synchron auf v1.8.0 — 5c/5d auf neuem Feature-Branch (Spec liegt vor)
+- Aktuell: `master` synchron auf v1.9.0 — Phase 6 auf neuem Feature-Branch (Spec zuerst)
 
 ---
 
@@ -284,4 +285,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.8.0 · SCHEMA_VERSION 4 · Kühlschrank live · nächster Schritt: 5c + 5d*
+*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.9.0 · SCHEMA_VERSION 4 · Phase 5 komplett · nur noch Phase 6 (AI) offen*
