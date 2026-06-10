@@ -107,6 +107,15 @@ export async function getLogsBetween(fromDate, toDate) {
   return db.getAll('log', range);
 }
 
+/**
+ * Gibt alle Tageseinträge zurück (für Export/Backup).
+ * @returns {Promise<LogEntry[]>}
+ */
+export async function getAllLogs() {
+  const db = await openDb();
+  return db.getAll('log');
+}
+
 // ---------------------------------------------------------------------------
 // week-Store
 // ---------------------------------------------------------------------------
@@ -161,6 +170,15 @@ export async function getWeeksByYear(year) {
   const db = await openDb();
   const index = db.transaction('week').store.index('year');
   return index.getAll(year);
+}
+
+/**
+ * Gibt alle Wocheneinträge zurück (für Export/Backup).
+ * @returns {Promise<WeekEntry[]>}
+ */
+export async function getAllWeeks() {
+  const db = await openDb();
+  return db.getAll('week');
 }
 
 // ---------------------------------------------------------------------------

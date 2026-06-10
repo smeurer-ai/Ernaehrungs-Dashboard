@@ -7,12 +7,14 @@ import {
   saveUiState,
 } from './localStorage.js';
 import {
-  getLogsBetween,
-  getWeeksByYear,
+  getAllLogs,
+  getAllWeeks,
+  getAllFavoriteFoods,
   saveLogEntry,
   saveWeek,
   getAllCustomRecipes,
   saveCustomRecipe,
+  saveFavoriteFood,
 } from './indexeddb.js';
 import { APP_VERSION, SCHEMA_VERSION } from '../version.js';
 
@@ -24,7 +26,6 @@ import { APP_VERSION, SCHEMA_VERSION } from '../version.js';
  * Exportiert alle lokalen Daten als JSON-Blob.
  * - claudeApiKey wird IMMER als null gesetzt
  * - Aktualisiert settings.lastBackupAt
- * - log/week sind in Phase 1 leer (werden in Phase 3 befüllt)
  * @returns {Promise<Blob>}
  */
 export async function exportAll() {
@@ -32,12 +33,12 @@ export async function exportAll() {
   const settings = { ...loadSettings(), claudeApiKey: null };
   const uiState = loadUiState();
 
-  // Phase 1: log und week leer lassen
-  // Phase 3 wird hier getLogsBetween / getWeeksByYear befüllen
-  const log = [];
-  const week = [];
-
-  const recipesCustom = await getAllCustomRecipes();
+  const [log, week, recipesCustom, foodsCustom] = await Promise.all([
+    getAllLogs(),
+    getAllWeeks(),
+    getAllCustomRecipes(),
+    getAllFavoriteFoods(),
+  ]);
 
   const exportData = {
     exportedAt: Date.now(),
@@ -50,6 +51,7 @@ export async function exportAll() {
       log,
       week,
       recipesCustom,
+      foodsCustom,
     },
   };
 
@@ -67,7 +69,7 @@ export async function exportAll() {
 
 /**
  * @typedef {Object} ImportOptions
- * @property {'replace'} [mode] - 'replace' ersetzt alle vorhandenen Daten
+ * @property {'merge'} [mode] - 'merge' führt importierte Daten per Schlüssel mit vorhandenen zusammen
  */
 
 /**
@@ -81,12 +83,13 @@ export async function exportAll() {
  * Importiert Daten aus einer JSON-Datei.
  * - Versions-Check: schemaVersion in Datei > eigene → Error
  * - claudeApiKey wird aus importierten Daten ignoriert (lokal gesetzter bleibt)
- * - Schreibt Profil/Settings/UiState nach localStorage, log/week nach IndexedDB
+ * - Schreibt Profil/Settings/UiState nach localStorage; log/week/recipesCustom/foodsCustom
+ *   werden per Schlüssel in IndexedDB zusammengeführt (Merge, kein Ersetzen)
  * @param {File} file
  * @param {ImportOptions} [options]
  * @returns {Promise<ImportResult>}
  */
-export async function importAll(file, options = { mode: 'replace' }) {
+export async function importAll(file, options = { mode: 'merge' }) {
   const warnings = [];
 
   try {
@@ -150,6 +153,13 @@ export async function importAll(file, options = { mode: 'replace' }) {
     if (Array.isArray(data.recipesCustom) && data.recipesCustom.length > 0) {
       for (const recipe of data.recipesCustom) {
         await saveCustomRecipe(recipe);
+      }
+    }
+
+    // foodsCustom (Favoriten) nach IndexedDB schreiben
+    if (Array.isArray(data.foodsCustom) && data.foodsCustom.length > 0) {
+      for (const food of data.foodsCustom) {
+        await saveFavoriteFood(food);
       }
     }
 

@@ -22,7 +22,7 @@ export function DataManagement({ settings, onSettingsUpdate }) {
   async function handleImport(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const confirmed = window.confirm('Alle vorhandenen Daten werden ersetzt. Fortfahren?');
+    const confirmed = window.confirm('Importierte Daten werden zu vorhandenen Daten hinzugefügt (zusammengeführt, nicht ersetzt). Fortfahren?');
     if (!confirmed) return;
     setImporting(true);
     setImportStatus(null);

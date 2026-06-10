@@ -3,3 +3,7 @@ unpacked/
 *.pdf
 Übergabedokumente/
 node_modules/
+poc/
+smoke-phase-3e.mjs
+smoke-test-rezepte.mjs
+smoke-screenshots/
