@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
-**Zuletzt aktualisiert:** 2026-06-09
-**Stand:** Stabilisierungsrunde + Mobile-Test-Nachträge abgeschlossen · Phase 5 als nächstes  
+**Zuletzt aktualisiert:** 2026-06-10
+**Stand:** Sicherheits-/Datenintegritäts-Runde abgeschlossen (v1.4.1) · als nächstes: Rezept-Makro-UX, TS-08, Phase 5  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `master` · Stabilisierungsrunde gemerged (PR #4 · #5 · #6)
-**APP_VERSION:** `1.3.7` · **SCHEMA_VERSION:** `3`
+**Branch:** `fix/security-data-integrity` — fertig, bereit für PR nach master
+**APP_VERSION:** `1.4.1` · **SCHEMA_VERSION:** `3`
 
 ---
 
@@ -27,6 +27,8 @@
 | **Phase 3E — OFD + Barcode** | ✅ | OFD-Suche + Barcode-Scanner, Leucin-Schätzung aus Produktkategorie, MPS-Tagesübersicht (v1.3.1); Barcode-UX-Fix (v1.3.2) |
 | **Stabilisierungsrunde nach 3E** | ✅ | MPS-Slot-Logik, Makro-Ist/Ziel P/KH/F, OFD-Robustheit, Favoriten-Picker, Favorit im Edit-Modus, Rezepte→Tracker (v1.3.3–1.3.5) |
 | **Nachträge Mobile-Test** | ✅ | DayType-Sync Heute↔Tracker, OFD-Favoriten-Fix, App-Version sichtbar, Schriftgrößen 50+ (v1.3.6–1.3.7) |
+| **Rezept-Makros aus Zutaten** | ✅ | `macroMode: 'manual' \| 'ingredients'`; Zutaten optional mit Makros/100g + Gramm-Äquivalent; `calcIngredientMacros`, `calcRecipeMacrosFromIngredients`, `getRecipeMacros`; echtes Portionsgewicht statt 100g-Platzhalter (v1.4.0) — UX gilt als verbesserungswürdig, Überarbeitung geplant |
+| **Sicherheits-/Datenintegritäts-Runde** | ✅ | `poc/` aus Repo entfernt; Export enthielt `log`/`week`/`foodsCustom` **nicht** (Datenverlust bei Backup!) → jetzt vollständig; Import führt Favoriten zusammen; Import-Dialog sagt korrekt „zusammenführen statt ersetzen" (v1.4.1) |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung |
 
@@ -41,13 +43,14 @@
 - ✅ **Hydration-Karte:** Trink-Erinnerungen im Heute-Tab (zeitbasiert: vergangen = abgeblendet, nächste = hervorgehoben)
 - ✅ **Tagesbilanz:** KcalRing + MacroBars mit echten Ist-Werten; P/KH/F je Mahlzeit-Slot mit Farb-Feedback
 - ✅ **Rezepte-Tab:** 8 Initialrezepte + eigene Rezepte; Suchfeld; „In Tracker übernehmen" mit Slot- und Portionswahl; Export/Import
-- ✅ Export/Import JSON, Backup-Erinnerung
+- ✅ Export/Import JSON **vollständig** (Profil, Settings ohne API-Key, log, week, Favoriten, eigene Rezepte), Import = Zusammenführen per Schlüssel, Backup-Erinnerung
 - ✅ **OFD-Suche + Barcode:** 9s Timeout, 1 Retry, Relevanz-Ranking, differenzierte Fehlermeldungen; Leucin-Schätzung aus Produktkategorie; MPS-Felder in TrackedFood
 - ✅ **MPS-Tagesübersicht:** „X von Y Mahlzeiten MPS-wirksam" (Protein-Baseline; OFD-Leucin nur additiv)
 - ✅ **Favoriten-Picker:** Suchfeld, max 8 Treffer, zuletzt-aktualisiert als Default; „Als Favorit speichern" auch im Edit-Modus mit Duplikat-Check; OFD-Favoriten zuverlässig (kein stilles Reset mehr)
 - ✅ **DayType-Sync:** Heute-Tab und Tracker-Tab teilen denselben `uiState` über `App` als Single Source of Truth — kein Desync mehr
 - ✅ **Schriftgrößen 50+:** Lesbarkeit für Zielgruppe Frauen 50+ verbessert; zentrale Anpassungen in `theme.js`; Bottom-Nav, Labels, Chips, Buttons, Tags alle größer
-- ✅ **App-Version:** `v1.3.7 · Schema 3` im Profil-Tab → Daten-Management sichtbar
+- ✅ **App-Version:** `v1.4.1 · Schema 3` im Profil-Tab → Daten-Management sichtbar
+- ✅ **Rezept-Makros aus Zutaten:** Eigene Rezepte können Gesamt-Makros aus Zutaten berechnen (`macroMode: 'ingredients'`); Zutaten-Makros aus Favoriten, OFD-Suche oder manuell; Gramm-Äquivalente für EL/TL/Scheibe/Dose; Snapshot-Werte beim Speichern; Tracker-Übernahme mit echtem Portionsgewicht
 
 ---
 
@@ -170,7 +173,9 @@ Bei neuen IndexedDB-Stores:
 | computeMpsSummary Priorität | Protein-Schätzung via `rateMealProtein` ist immer die Baseline; OFD-Leucinsumme (≥ 3g/Slot) kann nur verbessern, nie blockieren |
 | groupMacrosBySlot | Ersetzt `groupProteinBySlot`; gibt `{ slot: { p, c, f } }` zurück statt nur Protein-Zahl |
 | Favoriten-Duplikat-Check | `trim().toLowerCase()`-Vergleich in `FoodEntryModal.handleSave` — kein zweiter Favorit wenn Name identisch |
-| Rezept→Tracker gramm | `gramm=100` technischer Platzhalter (kein Gesamtgewicht bekannt); skalierte Makros direkt gespeichert; Einheitensystem folgt |
+| Rezept→Tracker gramm | `grammPerPortion` aus Zutaten-Summe wenn berechenbar, sonst `gramm=100` Platzhalter; skalierte Makros direkt gespeichert; Einheitensystem folgt |
+| `macroMode` Rezepte | `'manual'` (Default, Legacy) oder `'ingredients'`; bei `'ingredients'` werden berechnete Werte beim Speichern als Snapshot in `kcal/protein/carbs/fat` mitgeschrieben — Konsumenten müssen `macroMode` nicht kennen |
+| Zutaten-Makros Speichern | Nur wenn **alle vier** Felder (kcal100/p100/c100/f100) gesetzt sind; `macroMode: 'ingredients'` erfordert berechenbare `computedMacros` (sonst Validierungsfehler) |
 | Rezept→Tracker foodRef | `initial-recipe:<id>` für Initialrezepte · `recipe:<id>` für eigene Rezepte |
 | DayType Single Source of Truth | `useUiState()` nur in `App`; `HeuteTab` bekommt `dayType`/`trainingTime`/`trainingDurationMin` als Props und meldet Änderungen via `onUiStateUpdate` zurück — kein zweites `useUiState()` in Kindkomponenten |
 | `isMainMealSlot()` | Substring-Matching (`toLowerCase().includes()`), nicht exakte Set-Prüfung — robust für neue Slot-Namen |
@@ -190,17 +195,17 @@ tests/unit/calc/nutritionLogic.test.js     38 Tests
 tests/unit/calc/hydration.test.js          24 Tests
 tests/unit/calc/tracker.test.js            29 Tests  (computeMpsSummary, groupMacrosBySlot — Tasks 1+2)
 tests/unit/calc/favorites.test.js          10 Tests  (filterFavorites — Task 4, neu)
-tests/unit/calc/recipeTracking.test.js      7 Tests  (scaleRecipeMacros — Task 6, neu)
+tests/unit/calc/recipeTracking.test.js     26 Tests  (scaleRecipeMacros + calcIngredientMacros, calcRecipeMacrosFromIngredients, getRecipeMacros — v1.4.0)
 tests/unit/calc/mealTemplates.test.js      39 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin, null-Fallbacks)
 tests/unit/security/htmlSecurity.test.js    4 Tests  (CDN-Blocklist + CSP-Härtung)
 tests/unit/storage/migrations.test.js       5 Tests  (Schema v3 Migration)
 tests/unit/storage/indexeddb.test.js        8 Tests  (CRUD recipesCustom — saveCustomRecipe, getAllCustomRecipes, deleteCustomRecipe)
-tests/unit/storage/exportImport.test.js     4 Tests  (recipesCustom Export/Import + Altdaten-Robustheit)
+tests/unit/storage/exportImport.test.js    13 Tests  (Export log/week/foodsCustom/recipesCustom, API-Key nie im Export, Import-Merge, Altdaten-Robustheit)
 tests/unit/data/initialRecipes.test.js      8 Tests  (Struktur aller 8 Rezepte)
 tests/unit/calc/leucineFactors.test.js     18 Tests  (Phase 3E: estimateLeucineFactor, computeMpsFields)
 tests/unit/api/openFoodFacts.test.js       25 Tests  (mapOFFProduct, parseOFFSearchResults, normalizeBarcode, rankOFFResults, classifyOFFError — Task 3)
 ──────────────────────────────────────────────────
-Gesamt                                    252 Tests — alle grün
+Gesamt                                    280 Tests — alle grün (Stand 2026-06-10, v1.4.1)
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -232,13 +237,16 @@ Ausführen: `npm test` im Projekt-Root.
 7. ~~**Phase 3E**~~ ✅ erledigt (v1.3.2) — OFD-Suche + Barcode-Scanner, Leucin-Schätzung, MPS-Tagesübersicht, Barcode-UX-Fix
 8. ~~**Stabilisierungsrunde nach 3E**~~ ✅ erledigt (v1.3.3–1.3.5, PR #4) — MPS-Logik, Makro-Ist/Ziel, OFD-Robustheit, Favoriten-Picker, Favorit im Edit-Modus, Rezepte→Tracker
 9. ~~**Nachträge Mobile-Test**~~ ✅ erledigt (v1.3.6–1.3.7, PR #5 + #6) — DayType-Sync, OFD-Favoriten, App-Version, Schriftgrößen 50+
-10. **Rezept-Makros aus Zutaten** — Design-Spec ausstehend; eigener Branch/Plan vor Implementierung
-11. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge
+10. ~~**Rezept-Makros aus Zutaten**~~ ✅ erledigt (v1.4.0) — Spec + Plan unter `docs/superpowers/` (2026-06-09)
+11. ~~**Sicherheits-/Datenintegritäts-Runde**~~ ✅ erledigt (v1.4.1) — vollständiger Export (log/week/foodsCustom), Import-Merge, poc/ entfernt
+12. **Rezept-Makro-Eingabe vereinfachen** — UX der Zutaten-Makros gilt als umständlich; Redesign-Idee: Zutat direkt als Lebensmittel suchen (Favoriten + OFD) statt Makro-Panel pro Zutat; bekannte Bugs: Manuell-Modus springt bei Zutat-Änderung zurück auf „Berechnet"; Zutaten ohne vollständige Makros fallen stillschweigend aus der Summe
+13. **TS-08 fixen** — UTC-Datumsfehler (Einträge kurz nach Mitternacht am falschen Tag)
+14. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge
 
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
 - PR nach master nach Abschluss
-- Aktuell: `master` ist synchron; nächste Phase auf neuem Feature-Branch starten
+- Aktuell: `fix/security-data-integrity` fertig — PR nach master stellen, dann nächster Task auf neuem Branch
 
 ---
 
@@ -260,4 +268,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-09 · APP_VERSION 1.3.7 · SCHEMA_VERSION 3 · Stabilisierungsrunde + Mobile-Test-Nachträge abgeschlossen*
+*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.4.1 · SCHEMA_VERSION 3 · Sicherheits-/Datenintegritäts-Runde abgeschlossen*
