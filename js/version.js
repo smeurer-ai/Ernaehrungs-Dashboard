@@ -1,2 +1,2 @@
-export const APP_VERSION = '1.7.2';
-export const SCHEMA_VERSION = 3; // Phase 4: recipesCustom + recipePhotos
+export const APP_VERSION = '1.8.0';
+export const SCHEMA_VERSION = 4; // Phase 5: fridge (Kühlschrank)

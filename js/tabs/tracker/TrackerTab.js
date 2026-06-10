@@ -13,6 +13,8 @@ import { SavedMealsModal } from './SavedMealsModal.js';
 import { MealBuilderModal } from './MealBuilderModal.js';
 import { FavoriteFoodsModal } from './FavoriteFoodsModal.js';
 import { FoodEditorModal } from './FoodEditorModal.js';
+import { FridgeModal } from './FridgeModal.js';
+import { useFridge } from '../../hooks/useFridge.js';
 
 function generateId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -47,6 +49,10 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
 
   // Eigene Lebensmittel verwalten (7)
   const [foodsModalOpen, setFoodsModalOpen] = useState(false);
+
+  // Kühlschrank (Phase 5b)
+  const { fridgeItems, loading: fridgeLoading, addFridgeItem, removeFridgeItem, emptyFridge } = useFridge();
+  const [fridgeModalOpen, setFridgeModalOpen] = useState(false);
   const [foodEditorOpen, setFoodEditorOpen] = useState(false);
   const [editFood, setEditFood] = useState(null); // null = neues Lebensmittel
 
@@ -154,6 +160,16 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         >
           🧺 Lebensmittel
         </button>
+        <button
+          onClick=${() => setFridgeModalOpen(true)}
+          style=${{
+            background: 'none', border: `1px solid ${COLORS.gold}55`, borderRadius: '8px',
+            color: COLORS.gold, flex: 1, padding: '10px', fontSize: '12px',
+            cursor: 'pointer', fontFamily: FONTS.mono,
+          }}
+        >
+          ❄ Kühlschrank
+        </button>
       </div>
 
       <!-- Log-Liste -->
@@ -231,6 +247,17 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         onClose=${() => setFoodEditorOpen(false)}
         onSave=${addFavorite}
         food=${editFood}
+      />
+
+      <${FridgeModal}
+        open=${fridgeModalOpen}
+        onClose=${() => setFridgeModalOpen(false)}
+        fridgeItems=${fridgeItems}
+        loading=${fridgeLoading}
+        favorites=${favorites}
+        onAdd=${addFridgeItem}
+        onRemove=${removeFridgeItem}
+        onEmpty=${emptyFridge}
       />
     </div>
   `;

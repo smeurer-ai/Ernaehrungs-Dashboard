@@ -299,3 +299,36 @@ export async function deleteMeal(id) {
   if (!existing) return;
   await db.put('meals', { ...existing, deletedAt: Date.now() });
 }
+
+// ---------------------------------------------------------------------------
+// fridge-Store (Kühlschrank, Phase 5 — Schema v4)
+// Verbrauchsliste: hartes Löschen, kein Soft-Delete.
+// ---------------------------------------------------------------------------
+
+export async function getAllFridgeItems() {
+  const db = await openDb();
+  const all = await db.getAll('fridge');
+  return all.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export async function saveFridgeItem(item) {
+  const db = await openDb();
+  const now = Date.now();
+  const existing = await db.get('fridge', item.id);
+  await db.put('fridge', {
+    ...item,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+    deviceId: getDeviceId(),
+  });
+}
+
+export async function deleteFridgeItem(id) {
+  const db = await openDb();
+  await db.delete('fridge', id);
+}
+
+export async function clearFridge() {
+  const db = await openDb();
+  await db.clear('fridge');
+}

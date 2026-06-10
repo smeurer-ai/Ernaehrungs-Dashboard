@@ -56,8 +56,17 @@ export const INDEXED_DB_MIGRATIONS = {
     photos.createIndex('recipeId', 'recipeId', { unique: false });
   },
 
-  // v4: kommt in Phase 5 (Körperwerte)
-  // v5: kommt in Phase 6 (Sync-Metadaten)
+  /**
+   * v4: Phase 5 — Kühlschrank-Inhalt
+   * @param {import('idb').IDBPDatabase} db
+   */
+  4: (db) => {
+    const fridge = db.createObjectStore('fridge', { keyPath: 'id' });
+    fridge.createIndex('createdAt', 'createdAt', { unique: false });
+    fridge.createIndex('updatedAt', 'updatedAt', { unique: false });
+  },
+
+  // v5: kommt in Phase 6 (apiCache)
 };
 
 /**
