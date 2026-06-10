@@ -116,3 +116,23 @@ export function computeMpsSummary(entries, mealSlots) {
 
   return { mpsSlotsCount, totalActiveSlotsCount };
 }
+
+/**
+ * Berechnet die verbleibende Lücke eines Mahlzeit-Slots gegen sein Ziel.
+ * pending = aktuelle (noch nicht gespeicherte) Eingabe aus dem Dialog.
+ * Werte sind bei 0 gedeckelt (keine negativen Lücken) und auf 1 Dezimal gerundet.
+ *
+ * @param {{kcal:number,p:number,c:number,f:number}} target
+ * @param {{kcal?:number,p?:number,c?:number,f?:number}} [consumed]
+ * @param {{kcal?:number,p?:number,c?:number,f?:number}} [pending]
+ * @returns {{kcal:number,p:number,c:number,f:number}}
+ */
+export function computeSlotGap(target, consumed = {}, pending = {}) {
+  const gap = {};
+  for (const key of ['kcal', 'p', 'c', 'f']) {
+    const t = target?.[key] ?? 0;
+    const used = (consumed?.[key] ?? 0) + (pending?.[key] ?? 0);
+    gap[key] = Math.max(0, Math.round((t - used) * 10) / 10);
+  }
+  return gap;
+}

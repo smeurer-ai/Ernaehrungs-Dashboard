@@ -1,5 +1,39 @@
 import { describe, it, expect } from 'vitest';
-import { calcTrackedFoodMacros, sumConsumed, groupProteinBySlot, groupMacrosBySlot, computeMpsSummary } from '../../../js/calc/tracker.js';
+import { calcTrackedFoodMacros, sumConsumed, groupProteinBySlot, groupMacrosBySlot, computeMpsSummary, computeSlotGap } from '../../../js/calc/tracker.js';
+
+describe('computeSlotGap', () => {
+  const target = { kcal: 620, p: 38, c: 55, f: 18 };
+
+  it('ohne consumed/pending → Lücke = volles Ziel', () => {
+    expect(computeSlotGap(target)).toEqual({ kcal: 620, p: 38, c: 55, f: 18 });
+  });
+
+  it('consumed reduziert die Lücke', () => {
+    const r = computeSlotGap(target, { kcal: 210, p: 12, c: 20, f: 8 });
+    expect(r).toEqual({ kcal: 410, p: 26, c: 35, f: 10 });
+  });
+
+  it('pending (aktuelle Eingabe) zählt zusätzlich mit', () => {
+    const r = computeSlotGap(target, { kcal: 210, p: 12, c: 20, f: 8 }, { kcal: 200, p: 20, c: 10, f: 5 });
+    expect(r).toEqual({ kcal: 210, p: 6, c: 25, f: 5 });
+  });
+
+  it('Lücke ist bei 0 gedeckelt (kein Negativ bei Überschreitung)', () => {
+    const r = computeSlotGap(target, { kcal: 700, p: 50, c: 60, f: 25 });
+    expect(r).toEqual({ kcal: 0, p: 0, c: 0, f: 0 });
+  });
+
+  it('rundet auf 1 Dezimalstelle', () => {
+    const r = computeSlotGap({ kcal: 100, p: 10, c: 10, f: 10 }, { kcal: 0, p: 3.33, c: 0, f: 0 });
+    expect(r.p).toBe(6.7);
+  });
+
+  it('fehlende Felder in consumed werden als 0 behandelt', () => {
+    const r = computeSlotGap(target, { p: 10 });
+    expect(r.kcal).toBe(620);
+    expect(r.p).toBe(28);
+  });
+});
 
 // Referenz-Lebensmittel für Tests
 const QUARK        = { kcal100: 72,  p100: 12,  c100: 4,  f100: 0.2 };

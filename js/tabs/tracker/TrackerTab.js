@@ -3,6 +3,7 @@ import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { useLog } from '../../hooks/useLog.js';
 import { useFavoriteFoods } from '../../hooks/useFavoriteFoods.js';
 import { getMealTemplate } from '../../data/mealTemplates.js';
+import { distributeMacrosPerMeal } from '../../calc/macros.js';
 import { localDateString } from '../../calc/dates.js';
 import { DayLogList } from './DayLogList.js';
 import { FoodEntryModal } from './FoodEntryModal.js';
@@ -15,7 +16,7 @@ import { FoodEntryModal } from './FoodEntryModal.js';
  *   trainingTime: string,
  * }} props
  */
-export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDurationMin }) {
+export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDurationMin, calculated }) {
   const today = localDateString();
   const dayMeta = { dayType, trainingTime };
 
@@ -31,6 +32,28 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
     const meals = getMealTemplate(dayType, trainingTime, wakeUpTime, trainingDurationMin);
     return meals.map(m => m.label);
   }, [dayType, trainingTime, wakeUpTime, trainingDurationMin]);
+
+  // Zielwerte pro Slot aus dem Mahlzeitenplan — { 'Frühstück': { kcal, p, c, f }, ... }
+  const slotTargets = useMemo(() => {
+    const dayMacros = dayType === 'training' ? calculated?.macrosTraining : calculated?.macrosRest;
+    if (!dayMacros) return {};
+    const template = getMealTemplate(dayType, trainingTime, wakeUpTime, trainingDurationMin);
+    const meals = distributeMacrosPerMeal(template, dayMacros);
+    return Object.fromEntries(meals.map(m => [m.label, { kcal: m.kcal, p: m.protein, c: m.carbs, f: m.fat }]));
+  }, [dayType, trainingTime, wakeUpTime, trainingDurationMin, calculated]);
+
+  // Heute bereits eingetragene Makros pro Slot — { 'Frühstück': { kcal, p, c, f }, ... }
+  const consumedBySlot = useMemo(() => {
+    const acc = {};
+    for (const e of entries) {
+      const s = acc[e.mealSlot] ?? (acc[e.mealSlot] = { kcal: 0, p: 0, c: 0, f: 0 });
+      s.kcal += e.kcal ?? 0;
+      s.p    += e.p    ?? 0;
+      s.c    += e.c    ?? 0;
+      s.f    += e.f    ?? 0;
+    }
+    return acc;
+  }, [entries]);
 
   function openAddModal(slot) {
     setEditEntry(null);
@@ -110,6 +133,8 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         initialEntry=${editEntry}
         defaultSlot=${defaultSlot}
         mealSlots=${mealSlots}
+        slotTargets=${slotTargets}
+        consumedBySlot=${consumedBySlot}
       />
     </div>
   `;
