@@ -31,7 +31,7 @@
 | **Sicherheits-/Datenintegritäts-Runde** | ✅ | `poc/` aus Repo entfernt; Export enthielt `log`/`week`/`foodsCustom` **nicht** (Datenverlust bei Backup!) → jetzt vollständig; Import führt Favoriten zusammen; Import-Dialog sagt korrekt „zusammenführen statt ersetzen" (v1.4.1) |
 | **Rezept-Zutaten-Suche** | 🔄 | Zutat-Namensfeld = Suchfeld (Favoriten-Vorschläge + OFD); Status-Zeile pro Zutat mit Klartext-Grund; Gramm-Äquivalent inline mit sichtbarem Default; Bugfixes: Manuell-Modus springt nicht mehr zurück, Favoriten/OFD-Übernahme füllt alle vier Makro-Felder (v1.5.0) — **Mobile-Test ausstehend** |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
-| **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung |
+| **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung; **Essens-Vorschläge via Claude API** (Rest-Makros + Kühlschrank + Notvorrat als Kontext → konkreter Gericht-Vorschlag; strikt optional mit eigenem API-Key, Wunsch Stephanie 2026-06-10) |
 
 ### Was die App aktuell kann
 
@@ -243,7 +243,7 @@ Ausführen: `npm test` im Projekt-Root.
 12. **Rezept-Zutaten-Suche** 🔄 implementiert (v1.5.0, Spec `2026-06-10-rezept-zutaten-suche.md`) — **Mobile-Test nach Checkliste ausstehend**, danach PR mergen
 13. **TS-08 fixen** — UTC-Datumsfehler (Einträge kurz nach Mitternacht am falschen Tag)
 14. **Tracker: „Speichern + weitere"** — Eintrag-Dialog bleibt nach dem Speichern mit demselben Slot offen; mehrere Lebensmittel pro Mahlzeit ohne Neu-Öffnen (Stephanie, 2026-06-10)
-15. **Favoriten-Mahlzeiten** (Spec-Funktion #21) — Mahlzeit aus mehreren Lebensmitteln zusammenstellen (Zutaten-Suche aus v1.5.0 wiederverwenden), als Favorit in `meals`-Store speichern (existiert leer seit Schema v2), 1-Klick-Eintrag; eigene Spec vor Implementierung
+15. **Favoriten-Mahlzeiten** (Spec-Funktion #21) — Mahlzeit aus mehreren Lebensmitteln zusammenstellen (Zutaten-Suche aus v1.5.0 wiederverwenden), als Favorit in `meals`-Store speichern (existiert leer seit Schema v2), 1-Klick-Eintrag; **Pflicht-Anforderung (Stephanie, 2026-06-10): Slot-Zielwerte aus dem Heute-Tab im Baukasten anzeigen — Ziel / live-Summe der Zutaten / verbleibende Lücke, zum Herumprobieren**; eigene Spec vor Implementierung
 16. **Eigene Lebensmittel verwalten** (Spec-Funktion #22) — Liste der `foodsCustom` ansehen/bearbeiten/löschen; Felder Marke + Barcode (Fallback wenn OFF Produkt nicht kennt); ⭐-Notvorrat-Markierung (Voraussetzung für Phase-5-Vorschläge) (Stephanie, 2026-06-10: nicht alle Lebensmittel sind in OFF auffindbar)
 17. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge (kann dann auch Favoriten-Mahlzeiten vorschlagen)
 
