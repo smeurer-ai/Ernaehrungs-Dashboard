@@ -8,9 +8,11 @@ vi.mock('../../../js/storage/indexeddb.js', () => ({
   saveLogEntry:       vi.fn(),
   saveWeek:           vi.fn(),
   getAllMeals:        vi.fn(),
+  getAllFridgeItems:  vi.fn(),
   saveCustomRecipe:   vi.fn(),
   saveFavoriteFood:   vi.fn(),
   saveMeal:           vi.fn(),
+  saveFridgeItem:     vi.fn(),
 }));
 
 vi.mock('../../../js/storage/localStorage.js', () => ({
@@ -67,6 +69,52 @@ beforeEach(() => {
   vi.mocked(idb.saveFavoriteFood).mockResolvedValue(undefined);
   vi.mocked(idb.getAllMeals).mockResolvedValue([]);
   vi.mocked(idb.saveMeal).mockResolvedValue(undefined);
+  vi.mocked(idb.getAllFridgeItems).mockResolvedValue([]);
+  vi.mocked(idb.saveFridgeItem).mockResolvedValue(undefined);
+});
+
+describe('exportAll / importAll — fridge (Kühlschrank)', () => {
+  const TEST_FRIDGE_ITEM = {
+    id: 'fr-1', foodRef: 'manual', foodName: 'Brokkoli', gramm: 500,
+    createdAt: 1000, updatedAt: 1000,
+  };
+
+  it('enthält data.fridge als leeres Array wenn Kühlschrank leer', async () => {
+    const blob = await exportAll();
+    const json = JSON.parse(await blob.text());
+    expect(Array.isArray(json.data.fridge)).toBe(true);
+    expect(json.data.fridge).toHaveLength(0);
+  });
+
+  it('enthält Kühlschrank-Items in data.fridge', async () => {
+    vi.mocked(idb.getAllFridgeItems).mockResolvedValue([TEST_FRIDGE_ITEM]);
+    const blob = await exportAll();
+    const json = JSON.parse(await blob.text());
+    expect(json.data.fridge).toHaveLength(1);
+    expect(json.data.fridge[0].foodName).toBe('Brokkoli');
+  });
+
+  it('ruft saveFridgeItem für jedes Item in data.fridge auf', async () => {
+    const file = new Blob([JSON.stringify({
+      exportedAt: Date.now(), appVersion: '1.8.0', schemaVersion: 4,
+      data: { profile: null, settings: null, uiState: null, fridge: [TEST_FRIDGE_ITEM] },
+    })], { type: 'application/json' });
+
+    await importAll(file);
+
+    expect(vi.mocked(idb.saveFridgeItem)).toHaveBeenCalledOnce();
+  });
+
+  it('Altdaten-Export ohne fridge-Feld importiert ohne Fehler', async () => {
+    const file = new Blob([JSON.stringify({
+      exportedAt: Date.now(), appVersion: '1.7.2', schemaVersion: 3,
+      data: { profile: null, settings: null, uiState: null },
+    })], { type: 'application/json' });
+
+    const result = await importAll(file);
+    expect(result.ok).toBe(true);
+    expect(vi.mocked(idb.saveFridgeItem)).not.toHaveBeenCalled();
+  });
 });
 
 describe('exportAll / importAll — meals (Favoriten-Mahlzeiten)', () => {
