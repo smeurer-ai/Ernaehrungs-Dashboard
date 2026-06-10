@@ -7,6 +7,7 @@ import { RecipeCard } from './RecipeCard.js';
 import { RecipeEditor } from './RecipeEditor.js';
 import { RecipeToTrackerModal } from './RecipeToTrackerModal.js';
 import { getLogForDate, saveLogEntry } from '../../storage/indexeddb.js';
+import { localDateString } from '../../calc/dates.js';
 
 export function RezepteTab() {
   const { recipes, loading, saveRecipe, removeRecipe } = useRecipes();
@@ -48,7 +49,7 @@ export function RezepteTab() {
   }
 
   async function handleAddToTracker(trackerEntry) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateString();
     const existing = await getLogForDate(today);
     const entries = [...(existing?.entries ?? []), trackerEntry];
     await saveLogEntry({ ...existing, date: today, entries });

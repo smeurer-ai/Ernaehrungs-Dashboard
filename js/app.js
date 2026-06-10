@@ -15,6 +15,7 @@ import { WocheTab } from './tabs/woche/WocheTab.js';
 import { ProfilTab } from './tabs/profil/ProfilTab.js';
 import { ErststartAssistent } from './tabs/profil/ErststartAssistent.js';
 import { exportAll } from './storage/exportImport.js';
+import { localDateString } from './calc/dates.js';
 import { registerServiceWorker } from './pwa/registerServiceWorker.js';
 import { S, COLORS, FONTS } from './ui/theme.js';
 
@@ -112,7 +113,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ernaehrung-export-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `ernaehrung-export-${localDateString()}.json`;
     a.click();
     URL.revokeObjectURL(url);
     updateSettings({ lastBackupAt: Date.now() });

@@ -6,6 +6,7 @@ import { HydrationCard } from './HydrationCard.js';
 import { MpsSummaryCard } from './MpsSummaryCard.js';
 import { useLog } from '../../hooks/useLog.js';
 import { sumConsumed, groupMacrosBySlot } from '../../calc/tracker.js';
+import { localDateString } from '../../calc/dates.js';
 import { S, COLORS } from '../../ui/theme.js';
 
 // dayType/trainingTime/trainingDurationMin kommen von App (single source of truth).
@@ -15,7 +16,7 @@ import { S, COLORS } from '../../ui/theme.js';
 export function HeuteTab({ profile, calculated, dayType, trainingTime, trainingDurationMin, onUiStateUpdate }) {
   const wakeUpTime = profile?.wakeUpTime;
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateString();
   const { entries, loading } = useLog(today, { dayType, trainingTime });
   const consumed = loading
     ? { kcal: 0, protein: 0, carbs: 0, fat: 0 }
