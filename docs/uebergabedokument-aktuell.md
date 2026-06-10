@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
 **Zuletzt aktualisiert:** 2026-06-10
-**Stand:** v1.5.1 live (Rezept-Zutaten-Suche + TS-08 + Eintragen-und-weitere, PR #9 + #10 gemerged) · als nächstes: Slot-Ziele im Eintrag-Dialog (6a), dann Favoriten-Mahlzeiten  
+**Stand:** v1.5.2 live (inkl. Slot-Ziele im Eintrag-Dialog, PR #11) · als nächstes: Favoriten-Mahlzeiten (6b)  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
 **Branch:** `master` synchron · lokal getestet von Stephanie (2026-06-10)
-**APP_VERSION:** `1.5.1` · **SCHEMA_VERSION:** `3`
+**APP_VERSION:** `1.5.2` · **SCHEMA_VERSION:** `3`
 
 ---
 
@@ -31,6 +31,7 @@
 | **Sicherheits-/Datenintegritäts-Runde** | ✅ | `poc/` aus Repo entfernt; Export enthielt `log`/`week`/`foodsCustom` **nicht** (Datenverlust bei Backup!) → jetzt vollständig; Import führt Favoriten zusammen; Import-Dialog sagt korrekt „zusammenführen statt ersetzen" (v1.4.1) |
 | **Rezept-Zutaten-Suche** | ✅ | Zutat-Namensfeld = Suchfeld (Favoriten-Vorschläge + OFD); Status-Zeile pro Zutat mit Klartext-Grund; Gramm-Äquivalent inline mit sichtbarem Default; ●/○-Knopf für Hauptzutat; Bugfixes: Manuell-Modus springt nicht mehr zurück, Favoriten/OFD-Übernahme füllt alle vier Makro-Felder (v1.5.0, PR #9) |
 | **TS-08 + Eintragen-und-weitere** | ✅ | `localDateString()` ersetzt UTC-`toISOString()` an 5 Stellen (Einträge nach Mitternacht am richtigen Tag); Mahlzeit-Dialog: „✓ Eintragen + weitere hinzufügen" speichert und leert das Formular bei erhaltenem Slot (v1.5.1, PR #10) |
+| **Slot-Ziele im Eintrag-Dialog** | ✅ | Mahlzeit-Dialog zeigt Slot-Ziel, heute Eingetragenes, verbleibende Lücke (live inkl. aktueller Eingabe) und MPS-Hinweis (~30g Protein bei Hauptmahlzeiten); `computeSlotGap` in calc/tracker.js (v1.5.2, PR #11) |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung; **Essens-Vorschläge via Claude API** (Rest-Makros + Kühlschrank + Notvorrat als Kontext → konkreter Gericht-Vorschlag; strikt optional mit eigenem API-Key, Wunsch Stephanie 2026-06-10) |
 
@@ -195,7 +196,7 @@ tests/unit/calc/bmr.test.js                10 Tests
 tests/unit/calc/macros.test.js             23 Tests
 tests/unit/calc/nutritionLogic.test.js     38 Tests
 tests/unit/calc/hydration.test.js          24 Tests
-tests/unit/calc/tracker.test.js            29 Tests  (computeMpsSummary, groupMacrosBySlot — Tasks 1+2)
+tests/unit/calc/tracker.test.js            35 Tests  (computeMpsSummary, groupMacrosBySlot, computeSlotGap)
 tests/unit/calc/favorites.test.js          10 Tests  (filterFavorites — Task 4, neu)
 tests/unit/calc/recipeTracking.test.js     32 Tests  (scaleRecipeMacros, calcIngredientMacros, calcRecipeMacrosFromIngredients, getRecipeMacros, ingredientMacroStatus)
 tests/unit/calc/mealTemplates.test.js      39 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin, null-Fallbacks)
@@ -208,7 +209,7 @@ tests/unit/data/initialRecipes.test.js      8 Tests  (Struktur aller 8 Rezepte)
 tests/unit/calc/leucineFactors.test.js     18 Tests  (Phase 3E: estimateLeucineFactor, computeMpsFields)
 tests/unit/api/openFoodFacts.test.js       25 Tests  (mapOFFProduct, parseOFFSearchResults, normalizeBarcode, rankOFFResults, classifyOFFError — Task 3)
 ──────────────────────────────────────────────────
-Gesamt                                    292 Tests — alle grün (Stand 2026-06-10, v1.5.1)
+Gesamt                                    298 Tests — alle grün (Stand 2026-06-10, v1.5.2)
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -245,7 +246,7 @@ Ausführen: `npm test` im Projekt-Root.
 12. ~~**Rezept-Zutaten-Suche**~~ ✅ erledigt (v1.5.0, PR #9, Spec `2026-06-10-rezept-zutaten-suche.md`) — von Stephanie lokal getestet
 13. ~~**TS-08**~~ ✅ erledigt (v1.5.1, PR #10) — `localDateString()`
 14. ~~**Tracker: „Eintragen + weitere"**~~ ✅ erledigt (v1.5.1, PR #10)
-15. **Slot-Ziele im Eintrag-Dialog (6a)** — im Mahlzeit-Dialog unter der Slot-Auswahl anzeigen: Ziel des Slots (kcal/P/KH/F aus Mahlzeitenplan), heute bereits eingetragen, verbleibende Lücke, MPS-Hinweis (~30g Protein für Hauptmahlzeit); aktualisiert sich bei „Eintragen + weitere" (Stephanie, 2026-06-10)
+15. ~~**Slot-Ziele im Eintrag-Dialog (6a)**~~ ✅ erledigt (v1.5.2, PR #11) — von Stephanie getestet: „wichtige Änderung"
 16. **Favoriten-Mahlzeiten (6b)** (Spec-Funktion #21) — Mahlzeit aus mehreren Lebensmitteln zusammenstellen (Zutaten-Suche aus v1.5.0 wiederverwenden), als Favorit in `meals`-Store speichern (existiert leer seit Schema v2), 1-Klick-Eintrag; **Pflicht-Anforderung (Stephanie, 2026-06-10): Slot-Zielwerte aus dem Heute-Tab im Baukasten anzeigen — Ziel / live-Summe der Zutaten / verbleibende Lücke, zum Herumprobieren**; eigene Spec vor Implementierung
 16. **Eigene Lebensmittel verwalten** (Spec-Funktion #22) — Liste der `foodsCustom` ansehen/bearbeiten/löschen; Felder Marke + Barcode (Fallback wenn OFF Produkt nicht kennt); ⭐-Notvorrat-Markierung (Voraussetzung für Phase-5-Vorschläge) (Stephanie, 2026-06-10: nicht alle Lebensmittel sind in OFF auffindbar)
 17. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge (kann dann auch Favoriten-Mahlzeiten vorschlagen)
@@ -275,4 +276,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.5.1 · SCHEMA_VERSION 3 · Rezept-Zutaten-Suche + TS-08 + Eintragen-und-weitere live*
+*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.5.2 · SCHEMA_VERSION 3 · Slot-Ziele im Eintrag-Dialog live*
