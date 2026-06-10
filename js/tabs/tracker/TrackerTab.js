@@ -3,6 +3,7 @@ import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { useLog } from '../../hooks/useLog.js';
 import { useFavoriteFoods } from '../../hooks/useFavoriteFoods.js';
 import { getMealTemplate } from '../../data/mealTemplates.js';
+import { localDateString } from '../../calc/dates.js';
 import { DayLogList } from './DayLogList.js';
 import { FoodEntryModal } from './FoodEntryModal.js';
 
@@ -15,7 +16,7 @@ import { FoodEntryModal } from './FoodEntryModal.js';
  * }} props
  */
 export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDurationMin }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateString();
   const dayMeta = { dayType, trainingTime };
 
   const { entries, loading, addEntry, removeEntry, updateEntry } = useLog(today, dayMeta);

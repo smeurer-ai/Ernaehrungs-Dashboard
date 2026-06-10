@@ -54,6 +54,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
   const [saveFav, setSaveFav] = useState(false);
   const [searchMode, setSearchMode] = useState(null); // null | 'search' | 'barcode'
   const [offData, setOffData] = useState(null);        // { categoriesTags, offCode } | null
+  const [justSavedName, setJustSavedName] = useState(null); // zuletzt mit „+ weitere" gespeichert
 
   // Formular zurücksetzen / mit initialEntry befüllen wenn Modal geöffnet wird.
   // Im Edit-Modus: Per-100g-Werte aus vorhandenem Eintrag zurückrechnen
@@ -89,6 +90,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
       setSaveFav(false);
       setSearchMode(null);
       setOffData(null);
+      setJustSavedName(null);
     }
   }, [open, initialEntry, defaultSlot, mealSlots]);
 
@@ -129,7 +131,11 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
 
   const canSave = name.trim() && parseFloat(gramm) > 0 && preview !== null;
 
-  function handleSave() {
+  /**
+   * @param {boolean} keepOpen - true = „Eintragen + weitere": speichert und
+   *   leert das Formular für das nächste Lebensmittel; der Mahlzeit-Slot bleibt.
+   */
+  function handleSave(keepOpen = false) {
     if (!canSave) return;
 
     const entry = {
@@ -165,7 +171,23 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
     } : null;
 
     onSave(entry, favData);
-    onClose();
+
+    if (!keepOpen) {
+      onClose();
+      return;
+    }
+
+    // Formular für das nächste Lebensmittel leeren — Slot bleibt erhalten
+    setJustSavedName(name.trim());
+    setName('');
+    setGramm('');
+    setKcal100('');
+    setP100('');
+    setC100('');
+    setF100('');
+    setSaveFav(false);
+    setSearchMode(null);
+    setOffData(null);
   }
 
   if (!open) return null;
@@ -187,6 +209,16 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
         >
           ${slots.map(s => html`<option key=${s} value=${s}>${s}</option>`)}
         </select>
+
+        ${justSavedName && html`
+          <div style=${{
+            fontSize: '11px', color: '#5cb85c', fontFamily: FONTS.mono,
+            marginBottom: '10px', padding: '6px 10px', background: '#1a2a1a',
+            borderRadius: '6px', border: '1px solid #2a3a2a',
+          }}>
+            ✓ „${justSavedName}" eingetragen — nächstes Lebensmittel:
+          </div>
+        `}
 
         <!-- Favoriten-Picker (nur im Neueingabe-Modus) -->
         ${!isEdit && html`
@@ -320,15 +352,31 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
         </label>
 
         <!-- Buttons -->
+        ${!isEdit && html`
+          <button
+            onClick=${() => handleSave(true)}
+            disabled=${!canSave}
+            style=${{
+              background: 'none',
+              border: `1px solid ${canSave ? COLORS.gold : '#333'}`,
+              borderRadius: '8px', width: '100%', padding: '10px',
+              color: canSave ? COLORS.gold : '#666',
+              cursor: canSave ? 'pointer' : 'default',
+              fontSize: '13px', fontFamily: FONTS.mono, marginBottom: '8px',
+            }}
+          >
+            ✓ Eintragen + weitere hinzufügen
+          </button>
+        `}
         <div style=${{ display: 'flex', gap: '8px' }}>
           <button
             onClick=${onClose}
             style=${{ ...S.btn('#222', COLORS.text), flex: 1 }}
           >
-            Abbrechen
+            ${justSavedName ? 'Fertig' : 'Abbrechen'}
           </button>
           <button
-            onClick=${handleSave}
+            onClick=${() => handleSave(false)}
             disabled=${!canSave}
             style=${{
               ...S.btn(canSave ? COLORS.gold : '#333', canSave ? '#111' : '#666'),
