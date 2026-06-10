@@ -2,8 +2,8 @@ import { html, useState, useEffect, useMemo } from '../../lib.js';
 import { Modal } from '../../ui/Modal.js';
 import { RECIPE_MEAL_SLOTS, INGREDIENT_UNIT_SUGGESTIONS } from '../../data/mealSlots.js';
 import { COLORS, FONTS, S } from '../../ui/theme.js';
-import { calcRecipeMacrosFromIngredients } from '../../calc/recipeTracking.js';
-import { FavoritePicker } from '../tracker/FavoritePicker.js';
+import { calcRecipeMacrosFromIngredients, ingredientMacroStatus, UNIT_GRAM_DEFAULTS } from '../../calc/recipeTracking.js';
+import { filterFavorites } from '../../calc/favorites.js';
 import { OFFSearchPanel } from '../tracker/OFFSearchPanel.js';
 
 function generateId() {
@@ -71,6 +71,19 @@ function validate(form, computedMacros) {
 
 const UNIT_LIST_ID = 'recipe-editor-units';
 
+// Form-Zutat (String-Felder) → numerische Zutat für die calc-Schicht
+function toNumericIngredient(ing) {
+  return {
+    ...ing,
+    amount:  Number(ing.amount) || 0,
+    kcal100: ing.kcal100 !== '' ? Number(ing.kcal100) : undefined,
+    p100:    ing.p100    !== '' ? Number(ing.p100)    : undefined,
+    c100:    ing.c100    !== '' ? Number(ing.c100)    : undefined,
+    f100:    ing.f100    !== '' ? Number(ing.f100)    : undefined,
+    grammEquivalent: ing.grammEquivalent !== '' ? Number(ing.grammEquivalent) : undefined,
+  };
+}
+
 // compact inputs for the dense form layout
 const inp  = { ...S.input, fontSize: '13px', padding: '8px 10px' };
 const ta   = { ...inp, resize: 'vertical', minHeight: '52px', fontFamily: FONTS.sans };
@@ -96,34 +109,31 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
   const isEdit = !!recipe?.id;
   const [form, setForm] = useState(() => initForm(recipe));
   const [errors, setErrors] = useState([]);
-  const [expandedIngMacros, setExpandedIngMacros] = useState({});
+  const [expandedIngDetails, setExpandedIngDetails] = useState({});
   const [ingOffSearchIdx, setIngOffSearchIdx] = useState(null);
+  const [suggestIdx, setSuggestIdx] = useState(null);
+  const [macroModeChosenByUser, setMacroModeChosenByUser] = useState(false);
 
-  const computedMacros = useMemo(() => {
-    const ings = form.ingredients.map(ing => ({
-      ...ing,
-      amount: Number(ing.amount) || 0,
-      kcal100: ing.kcal100 !== '' ? Number(ing.kcal100) : undefined,
-      p100:    ing.p100    !== '' ? Number(ing.p100)    : undefined,
-      c100:    ing.c100    !== '' ? Number(ing.c100)    : undefined,
-      f100:    ing.f100    !== '' ? Number(ing.f100)    : undefined,
-      grammEquivalent: ing.grammEquivalent !== '' ? Number(ing.grammEquivalent) : undefined,
-    }));
-    return calcRecipeMacrosFromIngredients(ings);
-  }, [form.ingredients]);
+  const computedMacros = useMemo(
+    () => calcRecipeMacrosFromIngredients(form.ingredients.map(toNumericIngredient)),
+    [form.ingredients],
+  );
 
   useEffect(() => {
     if (!open) return;
     setForm(initForm(recipe));
     setErrors([]);
-    setExpandedIngMacros({});
+    setExpandedIngDetails({});
     setIngOffSearchIdx(null);
+    setSuggestIdx(null);
+    setMacroModeChosenByUser(false);
   }, [open, recipe]);
 
   // Neues Rezept: macroMode automatisch auf 'ingredients' wechseln
-  // wenn erstmals berechenbare Zutaten-Makros vorliegen
+  // wenn erstmals berechenbare Zutaten-Makros vorliegen.
+  // Nie gegen eine explizite Modus-Wahl der Nutzerin (macroModeChosenByUser).
   useEffect(() => {
-    if (computedMacros && form.macroMode === 'manual' && !recipe?.macroMode) {
+    if (computedMacros && form.macroMode === 'manual' && !recipe?.macroMode && !macroModeChosenByUser) {
       set('macroMode', 'ingredients');
     }
   }, [computedMacros]);
@@ -160,24 +170,26 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
     });
   }
 
-  function toggleIngMacros(i) {
-    setExpandedIngMacros(prev => ({ ...prev, [i]: !prev[i] }));
+  function toggleIngDetails(i) {
+    setExpandedIngDetails(prev => ({ ...prev, [i]: !prev[i] }));
   }
 
-  function setIngMacrosFromFav(i, fav) {
-    setIngredient(i, 'kcal100', String(fav.kcal100 ?? ''));
-    setIngredient(i, 'p100',    String(fav.p100    ?? ''));
-    setIngredient(i, 'c100',    String(fav.c100    ?? ''));
-    setIngredient(i, 'f100',    String(fav.f100    ?? ''));
-    setIngredient(i, 'sourceRef', fav.id ? `fav:${fav.id}` : 'manual');
-  }
-
-  function setIngMacrosFromOFF(i, product) {
-    setIngredient(i, 'kcal100', String(product.kcal100 ?? ''));
-    setIngredient(i, 'p100',    String(product.p100    ?? ''));
-    setIngredient(i, 'c100',    String(product.c100    ?? ''));
-    setIngredient(i, 'f100',    String(product.f100    ?? ''));
-    setIngredient(i, 'sourceRef', product.offCode ? `off:${product.offCode}` : 'off:search');
+  // Übernimmt Name + alle vier Makros (fehlende → 0) aus Favorit oder OFD-Produkt.
+  // Garantiert dadurch die Alle-vier-Felder-Regel — Zutat zählt immer mit.
+  function applyFoodToIngredient(i, food, sourceRef) {
+    setForm(f => ({
+      ...f,
+      ingredients: f.ingredients.map((ing, idx) => idx === i ? {
+        ...ing,
+        name:    food.name || ing.name,
+        kcal100: String(food.kcal100 ?? 0),
+        p100:    String(food.p100    ?? 0),
+        c100:    String(food.c100    ?? 0),
+        f100:    String(food.f100    ?? 0),
+        sourceRef,
+      } : ing),
+    }));
+    setSuggestIdx(null);
   }
 
   function handleSave() {
@@ -301,7 +313,7 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
 
         <div style=${{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
           <button
-            onClick=${() => set('macroMode', 'ingredients')}
+            onClick=${() => { setMacroModeChosenByUser(true); set('macroMode', 'ingredients'); }}
             style=${{
               ...S.btn(form.macroMode === 'ingredients' ? COLORS.gold : '#1e1e1e',
                        form.macroMode === 'ingredients' ? '#111' : COLORS.textMuted),
@@ -310,6 +322,7 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
           >⚡ Berechnet aus Zutaten</button>
           <button
             onClick=${() => {
+              setMacroModeChosenByUser(true);
               if (form.macroMode === 'ingredients' && computedMacros) {
                 set('kcal',    String(computedMacros.kcal));
                 set('protein', String(computedMacros.protein));
@@ -349,14 +362,24 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
         Zutaten
         <span style=${{ color: COLORS.gold, fontWeight: 400, letterSpacing: 0, marginLeft: '8px' }}>● = Hauptzutat</span>
       </div>
-      ${form.ingredients.map((ing, i) => html`
-        <div key=${i}>
-          <div style=${{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '6px' }}>
+      ${form.ingredients.map((ing, i) => {
+        const st = ingredientMacroStatus(toNumericIngredient(ing));
+        const showSuggestions = suggestIdx === i && ing.name.trim().length >= 2;
+        const suggestions = showSuggestions ? filterFavorites(favorites, ing.name, 5).items : [];
+        const hasAllMacros = ing.kcal100 !== '' && ing.p100 !== '' && ing.c100 !== '' && ing.f100 !== '';
+        const needsGramEquiv = hasAllMacros && ing.unit && ing.unit !== 'g' && ing.unit !== 'ml';
+        const gramDefault = UNIT_GRAM_DEFAULTS[ing.unit];
+
+        return html`
+        <div key=${i} style=${{ marginBottom: '10px' }}>
+          <div style=${{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             <input
               style=${{ ...inp, flex: 3, minWidth: 0 }}
               value=${ing.name}
-              onInput=${e => setIngredient(i, 'name', e.target.value)}
-              placeholder="Zutat"
+              onInput=${e => { setIngredient(i, 'name', e.target.value); setSuggestIdx(i); }}
+              onFocus=${() => setSuggestIdx(i)}
+              onBlur=${() => setTimeout(() => setSuggestIdx(cur => cur === i ? null : cur), 150)}
+              placeholder="Zutat suchen…"
             />
             <input
               style=${{ ...inp, flex: 1, minWidth: 0, textAlign: 'right' }}
@@ -379,46 +402,95 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
               title="Hauptzutat"
               style=${{ accentColor: COLORS.gold, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
             />
-            <button
-              onClick=${() => toggleIngMacros(i)}
-              title=${expandedIngMacros[i] ? 'Makros ausblenden' : 'Makros eingeben'}
-              style=${{
-                background: 'none', border: `1px solid ${form.ingredients[i].kcal100 ? COLORS.gold : '#333'}`,
-                borderRadius: '4px', color: form.ingredients[i].kcal100 ? COLORS.gold : COLORS.textMuted,
-                cursor: 'pointer', fontSize: '10px', padding: '2px 5px', flexShrink: 0, fontFamily: FONTS.mono,
-              }}
-            >${expandedIngMacros[i] ? '−M' : '+M'}</button>
             <button onClick=${() => removeIngredient(i)} style=${removeBtnStyle}>×</button>
           </div>
-          ${expandedIngMacros[i] && html`
+
+          ${showSuggestions && html`
+            <div style=${{ background: '#141414', border: '1px solid #2a2a2a', borderRadius: '8px', marginTop: '4px', overflow: 'hidden' }}>
+              ${suggestions.map(fav => html`
+                <button
+                  key=${fav.id}
+                  onMouseDown=${e => { e.preventDefault(); applyFoodToIngredient(i, fav, fav.id ? `fav:${fav.id}` : 'manual'); }}
+                  style=${{
+                    display: 'flex', justifyContent: 'space-between', width: '100%', background: 'none',
+                    border: 'none', borderBottom: '1px solid #222', padding: '8px 10px', cursor: 'pointer',
+                    color: COLORS.text, fontSize: '12px', fontFamily: FONTS.sans, textAlign: 'left',
+                  }}
+                >
+                  <span>★ ${fav.name}</span>
+                  <span style=${{ color: COLORS.textMuted, fontFamily: FONTS.mono, fontSize: '11px', flexShrink: 0 }}>${fav.kcal100 ?? 0} kcal/100g</span>
+                </button>
+              `)}
+              <button
+                onMouseDown=${e => { e.preventDefault(); setIngOffSearchIdx(i); setSuggestIdx(null); }}
+                style=${{
+                  display: 'block', width: '100%', background: 'none', border: 'none',
+                  padding: '8px 10px', cursor: 'pointer', color: COLORS.textMuted,
+                  fontSize: '12px', fontFamily: FONTS.sans, textAlign: 'left',
+                }}
+              >🌐 In Open Food Facts suchen…</button>
+            </div>
+          `}
+
+          ${ingOffSearchIdx === i && html`
+            <div style=${{ marginTop: '6px' }}>
+              <${OFFSearchPanel}
+                onSelect=${product => { applyFoodToIngredient(i, product, product.offCode ? `off:${product.offCode}` : 'off:search'); setIngOffSearchIdx(null); }}
+                onClose=${() => setIngOffSearchIdx(null)}
+              />
+            </div>
+          `}
+
+          ${ing.name.trim() !== '' && html`
+            <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginTop: '3px', paddingLeft: '2px' }}>
+              ${st.status === 'ok' && html`
+                <span style=${{ fontSize: '11px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>
+                  → ${st.macros.kcal} kcal · ${st.macros.p}g P · ${st.macros.c}g KH · ${st.macros.f}g F
+                </span>
+              `}
+              ${st.status === 'no-macros' && html`
+                <span style=${{ fontSize: '11px', color: COLORS.textSubtle, fontFamily: FONTS.mono }}>· ohne Makros</span>
+              `}
+              ${st.status === 'missing-gram-equivalent' && html`
+                <span style=${{ fontSize: '11px', color: '#c8a830', fontFamily: FONTS.mono }}>
+                  ⚠ zählt nicht mit — bitte Gramm angeben:
+                </span>
+              `}
+              <button
+                onClick=${() => toggleIngDetails(i)}
+                style=${{
+                  background: 'none', border: 'none', color: COLORS.textMuted, cursor: 'pointer',
+                  fontSize: '10px', fontFamily: FONTS.mono, padding: '2px 4px', flexShrink: 0,
+                }}
+              >${expandedIngDetails[i] ? '− Details' : '✏ Details'}</button>
+            </div>
+          `}
+
+          ${needsGramEquiv && html`
+            <div style=${{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', paddingLeft: '2px' }}>
+              <label style=${{ ...S.label, fontSize: '10px', margin: 0, whiteSpace: 'nowrap' }}>
+                1 ${ing.unit} =
+              </label>
+              <input
+                type="number" min="0" step="1"
+                value=${ing.grammEquivalent}
+                onInput=${e => setIngredient(i, 'grammEquivalent', e.target.value)}
+                placeholder=${gramDefault != null ? String(gramDefault) : '?'}
+                style=${{ ...inp, width: '70px', textAlign: 'right', padding: '6px 8px' }}
+              />
+              <span style=${{ fontSize: '10px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>
+                g ${gramDefault != null && ing.grammEquivalent === '' ? `(Standard: ${gramDefault}g)` : ''}
+              </span>
+            </div>
+          `}
+
+          ${expandedIngDetails[i] && html`
             <div style=${{
               background: '#141414', border: '1px solid #2a2a2a', borderRadius: '8px',
               padding: '10px', marginTop: '6px',
             }}>
-              <div style=${{ marginBottom: '8px' }}>
-                <label style=${{ ...S.label, fontSize: '10px', marginBottom: '4px' }}>Makros aus Favoriten übernehmen</label>
-                <${FavoritePicker} favorites=${favorites} onSelect=${fav => setIngMacrosFromFav(i, fav)} />
-              </div>
-
-              <div style=${{ marginBottom: '8px' }}>
-                <button
-                  onClick=${() => setIngOffSearchIdx(ingOffSearchIdx === i ? null : i)}
-                  style=${{
-                    ...S.btn(ingOffSearchIdx === i ? COLORS.gold : '#1e1e1e',
-                             ingOffSearchIdx === i ? '#111' : COLORS.textMuted),
-                    fontSize: '11px', marginBottom: '6px',
-                  }}
-                >🔍 OFD Suche ${ingOffSearchIdx === i ? '(schließen)' : ''}</button>
-                ${ingOffSearchIdx === i && html`
-                  <${OFFSearchPanel}
-                    onSelect=${product => { setIngMacrosFromOFF(i, product); setIngOffSearchIdx(null); }}
-                    onClose=${() => setIngOffSearchIdx(null)}
-                  />
-                `}
-              </div>
-
               <label style=${{ ...S.label, fontSize: '10px' }}>Makros pro 100g (manuell)</label>
-              <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '8px' }}>
+              <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                 ${[['kcal100','kcal'],['p100','P g'],['c100','KH g'],['f100','F g']].map(([key, lbl]) => html`
                   <div key=${key}>
                     <label style=${{ ...S.label, fontSize: '9px' }}>${lbl}</label>
@@ -432,23 +504,6 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
                   </div>
                 `)}
               </div>
-
-              ${ing.unit && ing.unit !== 'g' && html`
-                <div style=${{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <label style=${{ ...S.label, fontSize: '10px', margin: 0, whiteSpace: 'nowrap' }}>
-                    1 ${ing.unit} =
-                  </label>
-                  <input
-                    type="number" min="0" step="1"
-                    value=${ing.grammEquivalent}
-                    onInput=${e => setIngredient(i, 'grammEquivalent', e.target.value)}
-                    placeholder="g"
-                    style=${{ ...inp, width: '70px', textAlign: 'right', padding: '6px 8px' }}
-                  />
-                  <span style=${{ fontSize: '10px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>g</span>
-                </div>
-              `}
-
               ${ing.sourceRef && html`
                 <div style=${{ fontSize: '10px', color: COLORS.textSubtle, fontFamily: FONTS.mono, marginTop: '6px' }}>
                   Quelle: ${ing.sourceRef}
@@ -457,7 +512,7 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
             </div>
           `}
         </div>
-      `)}
+      `;})}
       <button onClick=${addIngredient} style=${addBtnStyle}>+ Zutat hinzufügen</button>
 
       <div style=${{ ...S.cardTitle, marginBottom: '8px' }}>Zubereitung *</div>

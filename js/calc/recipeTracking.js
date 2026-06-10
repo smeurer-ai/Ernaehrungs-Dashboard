@@ -73,6 +73,21 @@ export function calcRecipeMacrosFromIngredients(ingredients) {
 }
 
 /**
+ * Beschreibt, warum eine Zutat (nicht) in die Makro-Summe eingeht.
+ * Grundlage für die Status-Zeile pro Zutat im RecipeEditor.
+ * @returns {{ status: 'ok'|'no-macros'|'missing-gram-equivalent', macros: ?object }}
+ */
+export function ingredientMacroStatus(ingredient) {
+  const hasMacros = ingredient.kcal100 != null && ingredient.p100 != null
+                 && ingredient.c100   != null && ingredient.f100 != null;
+  if (!hasMacros) return { status: 'no-macros', macros: null };
+
+  const macros = calcIngredientMacros(ingredient);
+  if (macros == null) return { status: 'missing-gram-equivalent', macros: null };
+  return { status: 'ok', macros };
+}
+
+/**
  * Liefert effektive Makros eines Rezepts.
  * Abstrahiert über macroMode — Aufrufer muss macroMode nicht kennen.
  */
