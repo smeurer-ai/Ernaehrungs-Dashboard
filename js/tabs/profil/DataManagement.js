@@ -2,6 +2,7 @@ import { html, useState } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { exportAll, importAll } from '../../storage/exportImport.js';
 import { APP_VERSION, SCHEMA_VERSION } from '../../version.js';
+import { localDateString } from '../../calc/dates.js';
 
 export function DataManagement({ settings, onSettingsUpdate }) {
   const [importing, setImporting] = useState(false);
@@ -11,7 +12,7 @@ export function DataManagement({ settings, onSettingsUpdate }) {
     const blob = await exportAll();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const date = new Date().toISOString().slice(0, 10);
+    const date = localDateString();
     a.href = url;
     a.download = `ernaehrung-export-${date}.json`;
     a.click();
