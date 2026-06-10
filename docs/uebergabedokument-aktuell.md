@@ -242,7 +242,10 @@ Ausführen: `npm test` im Projekt-Root.
 11. ~~**Sicherheits-/Datenintegritäts-Runde**~~ ✅ erledigt (v1.4.1) — vollständiger Export (log/week/foodsCustom), Import-Merge, poc/ entfernt
 12. **Rezept-Zutaten-Suche** 🔄 implementiert (v1.5.0, Spec `2026-06-10-rezept-zutaten-suche.md`) — **Mobile-Test nach Checkliste ausstehend**, danach PR mergen
 13. **TS-08 fixen** — UTC-Datumsfehler (Einträge kurz nach Mitternacht am falschen Tag)
-14. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge
+14. **Tracker: „Speichern + weitere"** — Eintrag-Dialog bleibt nach dem Speichern mit demselben Slot offen; mehrere Lebensmittel pro Mahlzeit ohne Neu-Öffnen (Stephanie, 2026-06-10)
+15. **Favoriten-Mahlzeiten** (Spec-Funktion #21) — Mahlzeit aus mehreren Lebensmitteln zusammenstellen (Zutaten-Suche aus v1.5.0 wiederverwenden), als Favorit in `meals`-Store speichern (existiert leer seit Schema v2), 1-Klick-Eintrag; eigene Spec vor Implementierung
+16. **Eigene Lebensmittel verwalten** (Spec-Funktion #22) — Liste der `foodsCustom` ansehen/bearbeiten/löschen; Felder Marke + Barcode (Fallback wenn OFF Produkt nicht kennt); ⭐-Notvorrat-Markierung (Voraussetzung für Phase-5-Vorschläge) (Stephanie, 2026-06-10: nicht alle Lebensmittel sind in OFF auffindbar)
+17. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge (kann dann auch Favoriten-Mahlzeiten vorschlagen)
 
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
