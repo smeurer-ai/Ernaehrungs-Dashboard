@@ -11,6 +11,8 @@ import { DayLogList } from './DayLogList.js';
 import { FoodEntryModal } from './FoodEntryModal.js';
 import { SavedMealsModal } from './SavedMealsModal.js';
 import { MealBuilderModal } from './MealBuilderModal.js';
+import { FavoriteFoodsModal } from './FavoriteFoodsModal.js';
+import { FoodEditorModal } from './FoodEditorModal.js';
 
 function generateId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -31,7 +33,7 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
   const dayMeta = { dayType, trainingTime };
 
   const { entries, loading, addEntry, removeEntry, updateEntry } = useLog(today, dayMeta);
-  const { favorites, addFavorite } = useFavoriteFoods();
+  const { favorites, loading: favsLoading, addFavorite, removeFavorite } = useFavoriteFoods();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
@@ -42,6 +44,11 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
   const [mealsModalOpen, setMealsModalOpen] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [builderMeal, setBuilderMeal] = useState(null); // null = neue Mahlzeit
+
+  // Eigene Lebensmittel verwalten (7)
+  const [foodsModalOpen, setFoodsModalOpen] = useState(false);
+  const [foodEditorOpen, setFoodEditorOpen] = useState(false);
+  const [editFood, setEditFood] = useState(null); // null = neues Lebensmittel
 
   // Mahlzeit-Slots aus aktuellem Tagesplan (dynamisch via getMealTemplate)
   const mealSlots = useMemo(() => {
@@ -149,17 +156,29 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         </button>
       `}
 
-      <!-- Favoriten-Mahlzeiten (6b) -->
-      <button
-        onClick=${() => setMealsModalOpen(true)}
-        style=${{
-          background: 'none', border: `1px solid ${COLORS.gold}55`, borderRadius: '8px',
-          color: COLORS.gold, width: '100%', padding: '10px', fontSize: '13px',
-          cursor: 'pointer', marginTop: '8px', fontFamily: FONTS.mono,
-        }}
-      >
-        ★ Meine Mahlzeiten
-      </button>
+      <!-- Favoriten-Mahlzeiten (6b) + Eigene Lebensmittel (7) -->
+      <div style=${{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+        <button
+          onClick=${() => setMealsModalOpen(true)}
+          style=${{
+            background: 'none', border: `1px solid ${COLORS.gold}55`, borderRadius: '8px',
+            color: COLORS.gold, flex: 1, padding: '10px', fontSize: '12px',
+            cursor: 'pointer', fontFamily: FONTS.mono,
+          }}
+        >
+          ★ Mahlzeiten
+        </button>
+        <button
+          onClick=${() => setFoodsModalOpen(true)}
+          style=${{
+            background: 'none', border: `1px solid ${COLORS.gold}55`, borderRadius: '8px',
+            color: COLORS.gold, flex: 1, padding: '10px', fontSize: '12px',
+            cursor: 'pointer', fontFamily: FONTS.mono,
+          }}
+        >
+          🧺 Lebensmittel
+        </button>
+      </div>
 
       <!-- Eingabe-Modal -->
       <${FoodEntryModal}
@@ -194,6 +213,24 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         mealSlots=${mealSlots}
         slotTargets=${slotTargets}
         favorites=${favorites}
+      />
+
+      <${FavoriteFoodsModal}
+        open=${foodsModalOpen}
+        onClose=${() => setFoodsModalOpen(false)}
+        favorites=${favorites}
+        loading=${favsLoading}
+        onEdit=${food => { setEditFood(food); setFoodEditorOpen(true); }}
+        onNew=${() => { setEditFood(null); setFoodEditorOpen(true); }}
+        onDelete=${removeFavorite}
+        onToggleNotvorrat=${food => addFavorite({ ...food, isNotvorrat: !food.isNotvorrat })}
+      />
+
+      <${FoodEditorModal}
+        open=${foodEditorOpen}
+        onClose=${() => setFoodEditorOpen(false)}
+        onSave=${addFavorite}
+        food=${editFood}
       />
     </div>
   `;

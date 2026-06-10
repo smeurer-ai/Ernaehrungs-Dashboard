@@ -289,7 +289,12 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
             <${OFFSearchPanel} onSelect=${handleOFFSelect} onClose=${() => setSearchMode(null)} />
           `}
           ${searchMode === 'barcode' && html`
-            <${BarcodePanel} onSelect=${handleOFFSelect} onClose=${() => setSearchMode(null)} />
+            <${BarcodePanel}
+              onSelect=${handleOFFSelect}
+              onSelectFavorite=${fav => { handleFavSelect(fav); setGramm(current => current || '100'); }}
+              favorites=${favorites}
+              onClose=${() => setSearchMode(null)}
+            />
           `}
 
           ${offData && html`

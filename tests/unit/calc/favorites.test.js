@@ -1,5 +1,31 @@
 import { describe, it, expect } from 'vitest';
-import { filterFavorites } from '../../../js/calc/favorites.js';
+import { filterFavorites, findFavoriteByBarcode } from '../../../js/calc/favorites.js';
+
+describe('findFavoriteByBarcode', () => {
+  const FAVS = [
+    { id: '1', name: 'Hofladen-Quark', barcode: '4001234567890' },
+    { id: '2', name: 'Ohne Barcode' },
+    { id: '3', name: 'Mit Leerzeichen', barcode: '40 0987 654321' },
+  ];
+
+  it('findet Favorit mit exaktem Barcode', () => {
+    expect(findFavoriteByBarcode(FAVS, '4001234567890')?.id).toBe('1');
+  });
+
+  it('ignoriert Formatierung/Leerzeichen beim Vergleich', () => {
+    expect(findFavoriteByBarcode(FAVS, '400987654321')?.id).toBe('3');
+    expect(findFavoriteByBarcode(FAVS, '4001 2345 67890')?.id).toBe('1');
+  });
+
+  it('kein Treffer → null', () => {
+    expect(findFavoriteByBarcode(FAVS, '9999999999999')).toBeNull();
+  });
+
+  it('leerer Code → null (kein Match auf Favoriten ohne Barcode)', () => {
+    expect(findFavoriteByBarcode(FAVS, '')).toBeNull();
+    expect(findFavoriteByBarcode(FAVS, 'abc')).toBeNull();
+  });
+});
 
 // Hilfsfunktion: Favorit mit sinnvollen Defaults
 function fav(name, updatedAt = 1000) {
