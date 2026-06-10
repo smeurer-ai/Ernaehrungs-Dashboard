@@ -1,5 +1,44 @@
 import { describe, it, expect } from 'vitest';
-import { scaleRecipeMacros, calcIngredientMacros, calcRecipeMacrosFromIngredients, getRecipeMacros } from '../../../js/calc/recipeTracking.js';
+import { scaleRecipeMacros, calcIngredientMacros, calcRecipeMacrosFromIngredients, getRecipeMacros, ingredientMacroStatus } from '../../../js/calc/recipeTracking.js';
+
+describe('ingredientMacroStatus', () => {
+  it('keine Makros hinterlegt → no-macros', () => {
+    const r = ingredientMacroStatus({ name: 'Salz', amount: 1, unit: 'TL' });
+    expect(r.status).toBe('no-macros');
+    expect(r.macros).toBeNull();
+  });
+
+  it('einzelnes fehlendes Makro-Feld → no-macros (Alle-vier-Felder-Regel)', () => {
+    const r = ingredientMacroStatus({ name: 'X', amount: 100, unit: 'g', kcal100: 50, p100: 4, c100: 3 });
+    expect(r.status).toBe('no-macros');
+  });
+
+  it('Makros da, aber Stk ohne Gramm-Äquivalent → missing-gram-equivalent', () => {
+    const r = ingredientMacroStatus({ name: 'Ei', amount: 2, unit: 'Stk', kcal100: 143, p100: 12, c100: 1, f100: 10 });
+    expect(r.status).toBe('missing-gram-equivalent');
+    expect(r.macros).toBeNull();
+  });
+
+  it('Stk mit Gramm-Äquivalent → ok mit berechneten Makros', () => {
+    const r = ingredientMacroStatus({ name: 'Ei', amount: 2, unit: 'Stk', grammEquivalent: 55, kcal100: 143, p100: 12, c100: 1, f100: 10 });
+    expect(r.status).toBe('ok');
+    expect(r.macros.gramm).toBe(110);
+    expect(r.macros.kcal).toBe(157);
+  });
+
+  it('EL nutzt Default 15g → ok', () => {
+    const r = ingredientMacroStatus({ name: 'Öl', amount: 2, unit: 'EL', kcal100: 884, p100: 0, c100: 0, f100: 100 });
+    expect(r.status).toBe('ok');
+    expect(r.macros.gramm).toBe(30);
+    expect(r.macros.f).toBe(30);
+  });
+
+  it('Makros mit Wert 0 gelten als gesetzt → ok', () => {
+    const r = ingredientMacroStatus({ name: 'Wasser', amount: 100, unit: 'ml', kcal100: 0, p100: 0, c100: 0, f100: 0 });
+    expect(r.status).toBe('ok');
+    expect(r.macros.kcal).toBe(0);
+  });
+});
 
 const r1 = { kcal: 400, protein: 40, carbs: 30, fat: 10, servings: 1 };
 const r2 = { kcal: 400, protein: 40, carbs: 30, fat: 10, servings: 2 };

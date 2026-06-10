@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
 **Zuletzt aktualisiert:** 2026-06-10
-**Stand:** Sicherheits-/Datenintegritäts-Runde abgeschlossen (v1.4.1) · als nächstes: Rezept-Makro-UX, TS-08, Phase 5  
+**Stand:** Rezept-Zutaten-Suche implementiert (v1.5.0) — **Mobile-Test ausstehend, PR offen** · danach: TS-08, Phase 5  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `fix/security-data-integrity` — fertig, bereit für PR nach master
-**APP_VERSION:** `1.4.1` · **SCHEMA_VERSION:** `3`
+**Branch:** `feature/rezept-zutaten-suche` — implementiert, Merge erst nach Mobile-Test (Checkliste in Spec 2026-06-10)
+**APP_VERSION:** `1.5.0` · **SCHEMA_VERSION:** `3`
 
 ---
 
@@ -29,8 +29,9 @@
 | **Nachträge Mobile-Test** | ✅ | DayType-Sync Heute↔Tracker, OFD-Favoriten-Fix, App-Version sichtbar, Schriftgrößen 50+ (v1.3.6–1.3.7) |
 | **Rezept-Makros aus Zutaten** | ✅ | `macroMode: 'manual' \| 'ingredients'`; Zutaten optional mit Makros/100g + Gramm-Äquivalent; `calcIngredientMacros`, `calcRecipeMacrosFromIngredients`, `getRecipeMacros`; echtes Portionsgewicht statt 100g-Platzhalter (v1.4.0) — UX gilt als verbesserungswürdig, Überarbeitung geplant |
 | **Sicherheits-/Datenintegritäts-Runde** | ✅ | `poc/` aus Repo entfernt; Export enthielt `log`/`week`/`foodsCustom` **nicht** (Datenverlust bei Backup!) → jetzt vollständig; Import führt Favoriten zusammen; Import-Dialog sagt korrekt „zusammenführen statt ersetzen" (v1.4.1) |
+| **Rezept-Zutaten-Suche** | 🔄 | Zutat-Namensfeld = Suchfeld (Favoriten-Vorschläge + OFD); Status-Zeile pro Zutat mit Klartext-Grund; Gramm-Äquivalent inline mit sichtbarem Default; Bugfixes: Manuell-Modus springt nicht mehr zurück, Favoriten/OFD-Übernahme füllt alle vier Makro-Felder (v1.5.0) — **Mobile-Test ausstehend** |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
-| **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung |
+| **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung; **Essens-Vorschläge via Claude API** (Rest-Makros + Kühlschrank + Notvorrat als Kontext → konkreter Gericht-Vorschlag; strikt optional mit eigenem API-Key, Wunsch Stephanie 2026-06-10) |
 
 ### Was die App aktuell kann
 
@@ -195,7 +196,7 @@ tests/unit/calc/nutritionLogic.test.js     38 Tests
 tests/unit/calc/hydration.test.js          24 Tests
 tests/unit/calc/tracker.test.js            29 Tests  (computeMpsSummary, groupMacrosBySlot — Tasks 1+2)
 tests/unit/calc/favorites.test.js          10 Tests  (filterFavorites — Task 4, neu)
-tests/unit/calc/recipeTracking.test.js     26 Tests  (scaleRecipeMacros + calcIngredientMacros, calcRecipeMacrosFromIngredients, getRecipeMacros — v1.4.0)
+tests/unit/calc/recipeTracking.test.js     32 Tests  (scaleRecipeMacros, calcIngredientMacros, calcRecipeMacrosFromIngredients, getRecipeMacros, ingredientMacroStatus)
 tests/unit/calc/mealTemplates.test.js      39 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin, null-Fallbacks)
 tests/unit/security/htmlSecurity.test.js    4 Tests  (CDN-Blocklist + CSP-Härtung)
 tests/unit/storage/migrations.test.js       5 Tests  (Schema v3 Migration)
@@ -205,7 +206,7 @@ tests/unit/data/initialRecipes.test.js      8 Tests  (Struktur aller 8 Rezepte)
 tests/unit/calc/leucineFactors.test.js     18 Tests  (Phase 3E: estimateLeucineFactor, computeMpsFields)
 tests/unit/api/openFoodFacts.test.js       25 Tests  (mapOFFProduct, parseOFFSearchResults, normalizeBarcode, rankOFFResults, classifyOFFError — Task 3)
 ──────────────────────────────────────────────────
-Gesamt                                    280 Tests — alle grün (Stand 2026-06-10, v1.4.1)
+Gesamt                                    286 Tests — alle grün (Stand 2026-06-10, v1.5.0)
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -239,14 +240,17 @@ Ausführen: `npm test` im Projekt-Root.
 9. ~~**Nachträge Mobile-Test**~~ ✅ erledigt (v1.3.6–1.3.7, PR #5 + #6) — DayType-Sync, OFD-Favoriten, App-Version, Schriftgrößen 50+
 10. ~~**Rezept-Makros aus Zutaten**~~ ✅ erledigt (v1.4.0) — Spec + Plan unter `docs/superpowers/` (2026-06-09)
 11. ~~**Sicherheits-/Datenintegritäts-Runde**~~ ✅ erledigt (v1.4.1) — vollständiger Export (log/week/foodsCustom), Import-Merge, poc/ entfernt
-12. **Rezept-Makro-Eingabe vereinfachen** — UX der Zutaten-Makros gilt als umständlich; Redesign-Idee: Zutat direkt als Lebensmittel suchen (Favoriten + OFD) statt Makro-Panel pro Zutat; bekannte Bugs: Manuell-Modus springt bei Zutat-Änderung zurück auf „Berechnet"; Zutaten ohne vollständige Makros fallen stillschweigend aus der Summe
+12. **Rezept-Zutaten-Suche** 🔄 implementiert (v1.5.0, Spec `2026-06-10-rezept-zutaten-suche.md`) — **Mobile-Test nach Checkliste ausstehend**, danach PR mergen
 13. **TS-08 fixen** — UTC-Datumsfehler (Einträge kurz nach Mitternacht am falschen Tag)
-14. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge
+14. **Tracker: „Speichern + weitere"** — Eintrag-Dialog bleibt nach dem Speichern mit demselben Slot offen; mehrere Lebensmittel pro Mahlzeit ohne Neu-Öffnen (Stephanie, 2026-06-10)
+15. **Favoriten-Mahlzeiten** (Spec-Funktion #21) — Mahlzeit aus mehreren Lebensmitteln zusammenstellen (Zutaten-Suche aus v1.5.0 wiederverwenden), als Favorit in `meals`-Store speichern (existiert leer seit Schema v2), 1-Klick-Eintrag; **Pflicht-Anforderung (Stephanie, 2026-06-10): Slot-Zielwerte aus dem Heute-Tab im Baukasten anzeigen — Ziel / live-Summe der Zutaten / verbleibende Lücke, zum Herumprobieren**; eigene Spec vor Implementierung
+16. **Eigene Lebensmittel verwalten** (Spec-Funktion #22) — Liste der `foodsCustom` ansehen/bearbeiten/löschen; Felder Marke + Barcode (Fallback wenn OFF Produkt nicht kennt); ⭐-Notvorrat-Markierung (Voraussetzung für Phase-5-Vorschläge) (Stephanie, 2026-06-10: nicht alle Lebensmittel sind in OFF auffindbar)
+17. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge (kann dann auch Favoriten-Mahlzeiten vorschlagen)
 
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
 - PR nach master nach Abschluss
-- Aktuell: `fix/security-data-integrity` fertig — PR nach master stellen, dann nächster Task auf neuem Branch
+- Aktuell: `feature/rezept-zutaten-suche` implementiert — Mobile-Test, dann PR mergen
 
 ---
 
@@ -268,4 +272,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.4.1 · SCHEMA_VERSION 3 · Sicherheits-/Datenintegritäts-Runde abgeschlossen*
+*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.5.0 · SCHEMA_VERSION 3 · Rezept-Zutaten-Suche implementiert (Mobile-Test ausstehend)*
