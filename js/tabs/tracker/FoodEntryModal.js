@@ -4,7 +4,8 @@ import { Modal } from '../../ui/Modal.js';
 import { FavoritePicker } from './FavoritePicker.js';
 import { OFFSearchPanel } from './OFFSearchPanel.js';
 import { BarcodePanel } from './BarcodePanel.js';
-import { calcTrackedFoodMacros } from '../../calc/tracker.js';
+import { calcTrackedFoodMacros, computeSlotGap } from '../../calc/tracker.js';
+import { isMainMealSlot } from '../../calc/nutritionLogic.js';
 import { computeMpsFields } from '../../calc/leucineFactors.js';
 
 /** Generiert eine einfache, eindeutige ID */
@@ -33,7 +34,7 @@ const DEFAULT_MEAL_SLOTS = [
  *   mealSlots?: string[],       // dynamische Slot-Namen aus TrackerTab
  * }} props
  */
-export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry, defaultSlot, mealSlots }) {
+export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry, defaultSlot, mealSlots, slotTargets, consumedBySlot }) {
   const isEdit = !!initialEntry;
   // mealSlots?.length statt ?? — leeres Array fällt auf Default zurück
   const slots = mealSlots?.length ? mealSlots : DEFAULT_MEAL_SLOTS;
@@ -131,6 +132,15 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
 
   const canSave = name.trim() && parseFloat(gramm) > 0 && preview !== null;
 
+  // Slot-Ziel + verbleibende Lücke (nur Neueingabe; im Edit-Modus wäre die
+  // Summe verfälscht, weil der bearbeitete Eintrag schon mitgezählt ist)
+  const slotTarget = !isEdit ? slotTargets?.[slot] : null;
+  const slotConsumed = consumedBySlot?.[slot] ?? { kcal: 0, p: 0, c: 0, f: 0 };
+  const slotGap = slotTarget ? computeSlotGap(slotTarget, slotConsumed, preview ?? {}) : null;
+  const slotGapMet = slotGap != null && slotGap.kcal === 0 && slotGap.p === 0 && slotGap.c === 0 && slotGap.f === 0;
+  const isMainSlot = isMainMealSlot(slot);
+  const slotProteinSoFar = Math.round((slotConsumed.p + (preview?.p ?? 0)) * 10) / 10;
+
   /**
    * @param {boolean} keepOpen - true = „Eintragen + weitere": speichert und
    *   leert das Formular für das nächste Lebensmittel; der Mahlzeit-Slot bleibt.
@@ -205,10 +215,41 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
         <select
           value=${slot}
           onChange=${e => setSlot(e.target.value)}
-          style=${{ ...S.input, marginBottom: '14px' }}
+          style=${{ ...S.input, marginBottom: slotTarget ? '8px' : '14px' }}
         >
           ${slots.map(s => html`<option key=${s} value=${s}>${s}</option>`)}
         </select>
+
+        ${slotTarget && html`
+          <div style=${{
+            background: '#141414', border: '1px solid #2a2a2a', borderRadius: '8px',
+            padding: '8px 12px', marginBottom: '14px',
+            fontFamily: FONTS.mono, fontSize: '11px', lineHeight: 1.7,
+          }}>
+            <div style=${{ color: COLORS.textMuted }}>
+              Ziel: ${slotTarget.kcal} kcal · P ${slotTarget.p}g · KH ${slotTarget.c}g · F ${slotTarget.f}g
+            </div>
+            ${(slotConsumed.kcal > 0 || slotConsumed.p > 0) && html`
+              <div style=${{ color: COLORS.textMuted }}>
+                Schon eingetragen: ${Math.round(slotConsumed.kcal)} kcal · P ${Math.round(slotConsumed.p * 10) / 10}g · KH ${Math.round(slotConsumed.c * 10) / 10}g · F ${Math.round(slotConsumed.f * 10) / 10}g
+              </div>
+            `}
+            ${slotGapMet
+              ? html`<div style=${{ color: '#5cb85c' }}>✓ Slot-Ziel erreicht</div>`
+              : html`
+                <div style=${{ color: COLORS.gold }}>
+                  Noch offen${preview ? ' (mit dieser Eingabe)' : ''}: ${slotGap.kcal} kcal · P ${slotGap.p}g · KH ${slotGap.c}g · F ${slotGap.f}g
+                </div>
+              `}
+            ${isMainSlot && html`
+              <div style=${{ color: slotProteinSoFar >= 30 ? '#5cb85c' : '#c8a830' }}>
+                ${slotProteinSoFar >= 30
+                  ? `✓ MPS: ~30g Protein erreicht (${slotProteinSoFar}g)`
+                  : `MPS-Trigger braucht ~30g Protein — aktuell ${slotProteinSoFar}g`}
+              </div>
+            `}
+          </div>
+        `}
 
         ${justSavedName && html`
           <div style=${{

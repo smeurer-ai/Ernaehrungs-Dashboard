@@ -91,6 +91,7 @@ function App() {
           trainingTime=${uiState.preferredTrainingTime}
           wakeUpTime=${profile?.wakeUpTime}
           trainingDurationMin=${uiState.preferredTrainingDurationMin ?? profile?.trainingDurationMin ?? 60}
+          calculated=${calculated}
         />
       `;
       case 'rezepte': return html`<${RezepteTab} />`;
