@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
 **Zuletzt aktualisiert:** 2026-06-10
-**Stand:** v1.6.0 live (Favoriten-Mahlzeiten, PR #12) · als nächstes: Eigene Lebensmittel verwalten (7)  
+**Stand:** v1.7.2 live (Eigene Lebensmittel verwalten, PR #13) · als nächstes: Phase 5 (Kühlschrank + Vorschläge)  
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `master` synchron
-**APP_VERSION:** `1.6.0` · **SCHEMA_VERSION:** `3`
+**Branch:** `master` synchron · von Stephanie lokal getestet (2026-06-10)
+**APP_VERSION:** `1.7.2` · **SCHEMA_VERSION:** `3`
 
 ---
 
@@ -33,6 +33,7 @@
 | **TS-08 + Eintragen-und-weitere** | ✅ | `localDateString()` ersetzt UTC-`toISOString()` an 5 Stellen (Einträge nach Mitternacht am richtigen Tag); Mahlzeit-Dialog: „✓ Eintragen + weitere hinzufügen" speichert und leert das Formular bei erhaltenem Slot (v1.5.1, PR #10) |
 | **Slot-Ziele im Eintrag-Dialog** | ✅ | Mahlzeit-Dialog zeigt Slot-Ziel, heute Eingetragenes, verbleibende Lücke (live inkl. aktueller Eingabe) und MPS-Hinweis (~30g Protein bei Hauptmahlzeiten); `computeSlotGap` in calc/tracker.js (v1.5.2, PR #11) |
 | **Favoriten-Mahlzeiten (6b)** | ✅ | „★ Meine Mahlzeiten" im Tracker: Baukasten (Lebensmittel-Suche, Sticky-Ziel-Panel mit Slot-Ziel/Summe/Lücke/MPS), 1-Tipp-Eintrag mit Slot-Wahl, lastUsed-Sortierung; `meals`-Store + Export/Import; `computeMealTotals`/`mealItemsToTrackedFoods` (v1.6.0, PR #12) |
+| **Eigene Lebensmittel verwalten (7)** | ✅ | „🧺 Lebensmittel" im Tracker (Schnellzugriff-Leiste oben): Liste mit Suche, ⭐-Notvorrat-Toggle, Editor mit Marke + Barcode; Barcode-Scan findet eigene Lebensmittel VOR Open Food Facts (`findFavoriteByBarcode`); Modals auf Desktop zentriert, Mobile weiter Bottom-Sheet (v1.7.0–1.7.2, PR #13) |
 | **Phase 5 — Vorschläge** | ⏳ | Kühlschrank, Matching, proteinpriorisierte Lücken-Vorschläge |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung; **Essens-Vorschläge via Claude API** (Rest-Makros + Kühlschrank + Notvorrat als Kontext → konkreter Gericht-Vorschlag; strikt optional mit eigenem API-Key, Wunsch Stephanie 2026-06-10) |
 
@@ -198,7 +199,7 @@ tests/unit/calc/macros.test.js             23 Tests
 tests/unit/calc/nutritionLogic.test.js     38 Tests
 tests/unit/calc/hydration.test.js          24 Tests
 tests/unit/calc/tracker.test.js            35 Tests  (computeMpsSummary, groupMacrosBySlot, computeSlotGap)
-tests/unit/calc/favorites.test.js          10 Tests  (filterFavorites — Task 4, neu)
+tests/unit/calc/favorites.test.js          14 Tests  (filterFavorites, findFavoriteByBarcode)
 tests/unit/calc/recipeTracking.test.js     32 Tests  (scaleRecipeMacros, calcIngredientMacros, calcRecipeMacrosFromIngredients, getRecipeMacros, ingredientMacroStatus)
 tests/unit/calc/mealTemplates.test.js      39 Tests  (Mahlzeitenanker, wakeUpTime, trainingDurationMin, null-Fallbacks)
 tests/unit/calc/dates.test.js               6 Tests  (localDateString — TS-08, lokale Zeit statt UTC)
@@ -211,7 +212,7 @@ tests/unit/data/initialRecipes.test.js      8 Tests  (Struktur aller 8 Rezepte)
 tests/unit/calc/leucineFactors.test.js     18 Tests  (Phase 3E: estimateLeucineFactor, computeMpsFields)
 tests/unit/api/openFoodFacts.test.js       25 Tests  (mapOFFProduct, parseOFFSearchResults, normalizeBarcode, rankOFFResults, classifyOFFError — Task 3)
 ──────────────────────────────────────────────────
-Gesamt                                    310 Tests — alle grün (Stand 2026-06-10, v1.6.0)
+Gesamt                                    314 Tests — alle grün (Stand 2026-06-10, v1.7.2)
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -250,13 +251,13 @@ Ausführen: `npm test` im Projekt-Root.
 14. ~~**Tracker: „Eintragen + weitere"**~~ ✅ erledigt (v1.5.1, PR #10)
 15. ~~**Slot-Ziele im Eintrag-Dialog (6a)**~~ ✅ erledigt (v1.5.2, PR #11) — von Stephanie getestet: „wichtige Änderung"
 16. ~~**Favoriten-Mahlzeiten (6b)**~~ ✅ erledigt (v1.6.0, PR #12, Spec `2026-06-10-favoriten-mahlzeiten.md`) — Baukasten mit Sticky-Ziel-Panel, 1-Tipp-Eintrag, Export/Import
-17. **Eigene Lebensmittel verwalten (7)** (Spec-Funktion #22) — Liste der `foodsCustom` ansehen/bearbeiten/löschen; Felder Marke + Barcode (Fallback wenn OFF Produkt nicht kennt — Barcode-Scan findet eigene Lebensmittel); ⭐-Notvorrat-Markierung (Voraussetzung für Phase-5-Vorschläge) (Stephanie, 2026-06-10: nicht alle Lebensmittel sind in OFF auffindbar)
-18. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge (kann dann auch Favoriten-Mahlzeiten vorschlagen)
+17. ~~**Eigene Lebensmittel verwalten (7)**~~ ✅ erledigt (v1.7.0–1.7.2, PR #13) — inkl. Barcode-Fallback, Schnellzugriff-Leiste, Desktop-Modal-Zentrierung; von Stephanie getestet
+18. **Phase 5**: Kühlschrank-Matching — proteinpriorisierte Vorschläge (kann auch Favoriten-Mahlzeiten vorschlagen); Schema-Bump auf v4 (`fridge`-Store); **eigene Spec vor Implementierung**; Notvorrat-⭐ aus Task 7 ist die Datengrundlage
 
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
 - PR nach master nach Abschluss
-- Aktuell: `master` synchron auf v1.6.0 — nächster Task (7, Eigene Lebensmittel) auf neuem Feature-Branch
+- Aktuell: `master` synchron auf v1.7.2 — Phase 5 auf neuem Feature-Branch (Spec zuerst)
 
 ---
 
@@ -278,4 +279,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.6.0 · SCHEMA_VERSION 3 · Favoriten-Mahlzeiten live*
+*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.7.2 · SCHEMA_VERSION 3 · Eigene Lebensmittel verwalten live · nächster Schritt: Phase 5*
