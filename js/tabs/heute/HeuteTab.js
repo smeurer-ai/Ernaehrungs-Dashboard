@@ -4,8 +4,13 @@ import { DaySummary } from './DaySummary.js';
 import { MealPlanList } from './MealPlanList.js';
 import { HydrationCard } from './HydrationCard.js';
 import { MpsSummaryCard } from './MpsSummaryCard.js';
+import { GapSuggestions } from './GapSuggestions.js';
 import { useLog } from '../../hooks/useLog.js';
-import { sumConsumed, groupMacrosBySlot } from '../../calc/tracker.js';
+import { useFavoriteFoods } from '../../hooks/useFavoriteFoods.js';
+import { useSavedMeals } from '../../hooks/useSavedMeals.js';
+import { useFridge } from '../../hooks/useFridge.js';
+import { sumConsumed, groupMacrosBySlot, computeSlotGap } from '../../calc/tracker.js';
+import { computeGapSuggestions } from '../../calc/suggestions.js';
 import { localDateString } from '../../calc/dates.js';
 import { S, COLORS } from '../../ui/theme.js';
 
@@ -23,6 +28,11 @@ export function HeuteTab({ profile, calculated, dayType, trainingTime, trainingD
     : sumConsumed(entries);
   const consumedBySlot = loading ? undefined : groupMacrosBySlot(entries);
 
+  // Phase 5d: Datenquellen für Vorschläge (Hooks müssen vor early-return stehen)
+  const { favorites } = useFavoriteFoods();
+  const { meals } = useSavedMeals();
+  const { fridgeItems } = useFridge();
+
   if (!profile || !calculated) {
     return html`
       <div style=${{ ...S.content, textAlign: 'center', paddingTop: '60px', color: COLORS.textMuted }}>
@@ -32,6 +42,16 @@ export function HeuteTab({ profile, calculated, dayType, trainingTime, trainingD
   }
 
   const macros = dayType === 'training' ? calculated.macrosTraining : calculated.macrosRest;
+
+  // Phase 5d: ab 17 Uhr proteinpriorisierte Vorschläge für die Tageslücke
+  const isEvening = new Date().getHours() >= 17;
+  const dayGap = computeSlotGap(
+    { kcal: macros.kcal, p: macros.protein, c: macros.carbs, f: macros.fat },
+    { kcal: consumed.kcal, p: consumed.protein, c: consumed.carbs, f: consumed.fat },
+  );
+  const suggestions = (!loading && isEvening)
+    ? computeGapSuggestions({ gap: dayGap, isEvening, favorites, meals, fridgeItems })
+    : [];
 
   return html`
     <div style=${S.content}>
@@ -44,6 +64,7 @@ export function HeuteTab({ profile, calculated, dayType, trainingTime, trainingD
         onTrainingDurationChange=${d => onUiStateUpdate({ preferredTrainingDurationMin: d })}
       />
       <${DaySummary} macros=${macros} consumed=${consumed} />
+      <${GapSuggestions} gap=${dayGap} suggestions=${suggestions} />
       <div style=${S.cardTitle}>Mahlzeitenplan</div>
       <${MealPlanList}
         dayType=${dayType}

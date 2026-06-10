@@ -1,6 +1,6 @@
 // service-worker.js
 // Version muss mit js/version.js synchron gehalten werden.
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.0';
 const CACHE_STATIC = `ernaehrung-static-${APP_VERSION}`;
 
 // ── Lokale Assets (vollständig pre-cachen beim Install) ──────────────────────
@@ -37,6 +37,8 @@ const LOCAL_ASSETS = [
   './js/calc/recipeTracking.js',
   './js/calc/dates.js',
   './js/calc/meals.js',
+  './js/calc/matching.js',
+  './js/calc/suggestions.js',
   './js/hooks/useSavedMeals.js',
   './js/hooks/useLog.js',
   './js/hooks/useFavoriteFoods.js',
@@ -77,6 +79,7 @@ const LOCAL_ASSETS = [
   './js/tabs/heute/MpsSummaryCard.js',
   './js/tabs/heute/MealPlanEntry.js',
   './js/tabs/heute/MealPlanList.js',
+  './js/tabs/heute/GapSuggestions.js',
   './js/tabs/heute/HeuteTab.js',
   './js/tabs/tracker/TrackerTab.js',
   './js/tabs/rezepte/RecipeCard.js',

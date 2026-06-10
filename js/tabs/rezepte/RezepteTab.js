@@ -8,6 +8,8 @@ import { RecipeEditor } from './RecipeEditor.js';
 import { RecipeToTrackerModal } from './RecipeToTrackerModal.js';
 import { getLogForDate, saveLogEntry } from '../../storage/indexeddb.js';
 import { localDateString } from '../../calc/dates.js';
+import { recipeMatchesFridge } from '../../calc/matching.js';
+import { useFridge } from '../../hooks/useFridge.js';
 
 export function RezepteTab() {
   const { recipes, loading, saveRecipe, removeRecipe } = useRecipes();
@@ -17,15 +19,15 @@ export function RezepteTab() {
   const [editRecipe, setEditRecipe]   = useState(null);
   const [trackerRecipe, setTrackerRecipe] = useState(null);
   const [query, setQuery]             = useState('');
+  const [fridgeOnly, setFridgeOnly]   = useState(false);
+  const { fridgeItems } = useFridge();
 
   const q = query.trim().toLowerCase();
-  const filteredInitial = q
-    ? INITIAL_RECIPES.filter(r => r.name.toLowerCase().includes(q))
-    : INITIAL_RECIPES;
-  const filteredCustom = q
-    ? recipes.filter(r => r.name.toLowerCase().includes(q))
-    : recipes;
-  const noResults = q && filteredInitial.length === 0 && filteredCustom.length === 0;
+  const byQuery = r => !q || r.name.toLowerCase().includes(q);
+  const byFridge = r => !fridgeOnly || recipeMatchesFridge(r, fridgeItems).matches;
+  const filteredInitial = INITIAL_RECIPES.filter(r => byQuery(r) && byFridge(r));
+  const filteredCustom  = recipes.filter(r => byQuery(r) && byFridge(r));
+  const noResults = (q || fridgeOnly) && filteredInitial.length === 0 && filteredCustom.length === 0;
 
   function handleToggle(id) {
     setExpandedId(prev => prev === id ? null : id);
@@ -73,8 +75,25 @@ export function RezepteTab() {
         value=${query}
         placeholder="Rezept suchen…"
         onInput=${e => setQuery(e.target.value)}
-        style=${{ ...S.input, width: '100%', marginBottom: '12px', boxSizing: 'border-box' }}
+        style=${{ ...S.input, width: '100%', marginBottom: '8px', boxSizing: 'border-box' }}
       />
+
+      <!-- Kühlschrank-Filter (Phase 5c) -->
+      <button
+        onClick=${() => setFridgeOnly(v => !v)}
+        style=${{
+          background: fridgeOnly ? COLORS.gold : 'none',
+          border: `1px solid ${fridgeOnly ? COLORS.gold : '#333'}`,
+          borderRadius: '14px', color: fridgeOnly ? '#111' : COLORS.textMuted,
+          padding: '5px 12px', fontSize: '11px', cursor: 'pointer',
+          fontFamily: FONTS.mono, marginBottom: '12px',
+        }}
+      >❄ Kühlschrank-passend</button>
+      ${fridgeOnly && fridgeItems.length === 0 && html`
+        <div style=${{ fontSize: '11px', color: COLORS.textMuted, fontFamily: FONTS.mono, marginBottom: '10px' }}>
+          Dein Kühlschrank ist leer — fülle ihn im Tracker (❄ Kühlschrank).
+        </div>
+      `}
 
       <!-- Initial-Rezepte -->
       ${filteredInitial.map(r => html`
