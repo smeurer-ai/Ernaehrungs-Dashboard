@@ -5,8 +5,18 @@ import { useFavoriteFoods } from '../../hooks/useFavoriteFoods.js';
 import { getMealTemplate } from '../../data/mealTemplates.js';
 import { distributeMacrosPerMeal } from '../../calc/macros.js';
 import { localDateString } from '../../calc/dates.js';
+import { useSavedMeals } from '../../hooks/useSavedMeals.js';
+import { mealItemsToTrackedFoods } from '../../calc/meals.js';
 import { DayLogList } from './DayLogList.js';
 import { FoodEntryModal } from './FoodEntryModal.js';
+import { SavedMealsModal } from './SavedMealsModal.js';
+import { MealBuilderModal } from './MealBuilderModal.js';
+
+function generateId() {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
 
 /**
  * Tracker-Tab — Tages-Mahlzeiten manuell erfassen.
@@ -26,6 +36,12 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
   const [modalOpen, setModalOpen] = useState(false);
   const [editEntry, setEditEntry] = useState(null);
   const [defaultSlot, setDefaultSlot] = useState('Frühstück');
+
+  // Favoriten-Mahlzeiten (6b)
+  const { meals, loading: mealsLoading, addOrUpdateMeal, removeMeal, markUsed } = useSavedMeals();
+  const [mealsModalOpen, setMealsModalOpen] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderMeal, setBuilderMeal] = useState(null); // null = neue Mahlzeit
 
   // Mahlzeit-Slots aus aktuellem Tagesplan (dynamisch via getMealTemplate)
   const mealSlots = useMemo(() => {
@@ -77,6 +93,15 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
     }
   }
 
+  // Gespeicherte Mahlzeit eintragen: jedes Item wird ein eigener TrackedFood
+  async function handleApplyMeal(meal, slot) {
+    const foods = mealItemsToTrackedFoods(meal, slot);
+    for (const f of foods) {
+      await addEntry({ ...f, id: generateId(), timestamp: Date.now() });
+    }
+    await markUsed(meal);
+  }
+
   // Datum für den Header formatieren
   const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString('de-DE', {
     weekday: 'long', day: 'numeric', month: 'long',
@@ -124,6 +149,18 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         </button>
       `}
 
+      <!-- Favoriten-Mahlzeiten (6b) -->
+      <button
+        onClick=${() => setMealsModalOpen(true)}
+        style=${{
+          background: 'none', border: `1px solid ${COLORS.gold}55`, borderRadius: '8px',
+          color: COLORS.gold, width: '100%', padding: '10px', fontSize: '13px',
+          cursor: 'pointer', marginTop: '8px', fontFamily: FONTS.mono,
+        }}
+      >
+        ★ Meine Mahlzeiten
+      </button>
+
       <!-- Eingabe-Modal -->
       <${FoodEntryModal}
         open=${modalOpen}
@@ -135,6 +172,28 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         mealSlots=${mealSlots}
         slotTargets=${slotTargets}
         consumedBySlot=${consumedBySlot}
+      />
+
+      <${SavedMealsModal}
+        open=${mealsModalOpen}
+        onClose=${() => setMealsModalOpen(false)}
+        meals=${meals}
+        loading=${mealsLoading}
+        mealSlots=${mealSlots}
+        onApply=${handleApplyMeal}
+        onEdit=${meal => { setBuilderMeal(meal); setBuilderOpen(true); }}
+        onNew=${() => { setBuilderMeal(null); setBuilderOpen(true); }}
+        onDelete=${removeMeal}
+      />
+
+      <${MealBuilderModal}
+        open=${builderOpen}
+        onClose=${() => setBuilderOpen(false)}
+        onSave=${addOrUpdateMeal}
+        meal=${builderMeal}
+        mealSlots=${mealSlots}
+        slotTargets=${slotTargets}
+        favorites=${favorites}
       />
     </div>
   `;
