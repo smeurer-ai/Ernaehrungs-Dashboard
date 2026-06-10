@@ -395,13 +395,15 @@ export function RecipeEditor({ open, onClose, recipe, onSave, favorites = [] }) 
               value=${ing.unit}
               onInput=${e => setIngredient(i, 'unit', e.target.value)}
             />
-            <input
-              type="checkbox"
-              checked=${ing.isMain}
-              onChange=${e => setIngredient(i, 'isMain', e.target.checked)}
-              title="Hauptzutat"
-              style=${{ accentColor: COLORS.gold, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
-            />
+            <button
+              onClick=${() => setIngredient(i, 'isMain', !ing.isMain)}
+              title=${ing.isMain ? 'Hauptzutat — antippen zum Entfernen' : 'Als Hauptzutat markieren'}
+              style=${{
+                background: 'none', border: `1px solid ${ing.isMain ? COLORS.gold : '#333'}`,
+                borderRadius: '6px', color: ing.isMain ? COLORS.gold : COLORS.textMuted,
+                cursor: 'pointer', fontSize: '14px', padding: '4px 7px', flexShrink: 0, lineHeight: 1,
+              }}
+            >${ing.isMain ? '●' : '○'}</button>
             <button onClick=${() => removeIngredient(i)} style=${removeBtnStyle}>×</button>
           </div>
 
