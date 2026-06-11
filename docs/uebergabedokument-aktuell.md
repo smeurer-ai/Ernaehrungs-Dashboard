@@ -258,7 +258,8 @@ Ausführen: `npm test` im Projekt-Root.
 17. ~~**Eigene Lebensmittel verwalten (7)**~~ ✅ erledigt (v1.7.0–1.7.2, PR #13) — inkl. Barcode-Fallback, Schnellzugriff-Leiste, Desktop-Modal-Zentrierung; von Stephanie getestet
 18. ~~**Phase 5a + 5b**~~ ✅ erledigt (v1.8.0, PR #14) — Spec für ganze Phase 5 + Kühlschrank mit Schema v4; Migration von Stephanie verifiziert
 19. ~~**Phase 5c + 5d**~~ ✅ erledigt (v1.9.0, PR #15) — Vorschlags-Karte von Stephanie live getestet („Klasse!")
-20. **Phase 6 — AI** (letzte Phase!): Claude API-Key-Management im Profil (nie exportiert), Foto-Rezepterkennung via Claude Vision, Essens-Vorschläge via API (Rest-Makros + Kühlschrank + Notvorrat als Kontext), `apiCache`-Store (Schema v5); strikt optional/feature-gated — ohne Key keine UI, keine Requests; eigene Spec vor Implementierung
+20. **Woche-Tab ausbauen: Wochenplanung + Rückblick** (Stephanie, 2026-06-11) — Teil A *Planung*: 7 Tage anwählbar, pro Tag Trainings-/Ruhetag + Trainingszeit + Dauer festlegen → Mahlzeitenplan des Tages mit Zeiten + Makros aufklappbar (zum Vorbereiten/„Herrichten"); beim Anbruch des Tages übernimmt der Heute-Tab die Planung automatisch (uiState aus Wochenplan vorbelegen). Teil B *Rückblick* (ursprüngliche Spec-Funktion #8): 7-Tage-Makro-Übersicht aus `log`, Gewichtseingabe, Adaptations-Check ab Woche 4. Entscheidung: Kühlschrank bleibt Modal im Tracker (Schnell-Werkzeug), Woche-Tab gehört der Planung. Eigene Spec vor Implementierung; vermutlich neues Feld im `week`-Store oder eigener `weekPlan`-Eintrag (prüfen ob Schema-Bump nötig)
+21. **Phase 6 — AI** (letzte Phase!): Claude API-Key-Management im Profil (nie exportiert), Foto-Rezepterkennung via Claude Vision, Essens-Vorschläge via API (Rest-Makros + Kühlschrank + Notvorrat als Kontext), `apiCache`-Store (Schema v5); strikt optional/feature-gated — ohne Key keine UI, keine Requests; eigene Spec vor Implementierung
 
 **Branch-Workflow ab jetzt:**
 - Jede Phase auf eigenem Feature-Branch
