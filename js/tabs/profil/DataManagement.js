@@ -48,12 +48,12 @@ export function DataManagement({ settings, onSettingsUpdate }) {
         ${daysSince !== null ? `Letztes Backup: vor ${daysSince} ${daysSince === 1 ? 'Tag' : 'Tagen'}` : 'Noch kein Backup erstellt'}
       </div>
       <button onClick=${handleExport} style=${{ ...S.btn(), width: '100%', marginBottom: '10px' }}>
-        📤 Daten exportieren (JSON)
+        💾 Daten speichern (Export als Datei)
       </button>
       <label style=${{ display: 'block' }}>
         <input type="file" accept=".json" onChange=${handleImport} style=${{ display: 'none' }} />
         <div style=${{ ...S.btn('#333', COLORS.text), width: '100%', textAlign: 'center', cursor: 'pointer' }}>
-          ${importing ? '⏳ Importiere…' : '📥 Daten importieren'}
+          ${importing ? '⏳ Lade Daten…' : '📥 Daten wiederherstellen (Import)'}
         </div>
       </label>
       ${importStatus && html`
