@@ -13,7 +13,7 @@
 |---|---|
 | F1 | Rezept-Übernahme mit Portionswahl-Modal (RecipeToTrackerModal); kein direktes 1-Portion-Eintragen |
 | F2 | `FavoritePicker.js` bleibt liegen (nicht löschen); wird im neuen Flow einfach nicht mehr aufgerufen |
-| F3 | Leer: Top-3 Lebensmittel + Top-3 Mahlzeiten, keine Rezepte. Ab 2 Zeichen: alle 3 Gruppen gefiltert |
+| F3 | Leer: „Schnellauswahl" — Top-3 Mahlzeiten nach `lastUsed` desc (Label „Zuletzt genutzte Mahlzeiten") + Top-3 Lebensmittel nach `updatedAt` desc (Label „Häufige Lebensmittel"), keine Rezepte. Hintergrund: Mealprep → gleiche Mahlzeiten an 2 Tagen hintereinander. Ab 2 Zeichen: normale gruppierte Suche über alle 3 Typen. |
 | F4 | `maxPerGroup = 3` einheitlich; bei mehr Treffern: „X weitere — Suche eingrenzen" |
 
 ---
@@ -66,20 +66,24 @@ Kernlogik:
 ```
 q = query.trim().toLowerCase()
 
-LEBENSMITTEL (immer):
-  q === ''  → sortiert nach updatedAt desc, slice(0, maxPerGroup)
-  q !== ''  → filter name.includes(q), slice(0, maxPerGroup)
+MODUS A — Schnellauswahl (q === '' oder q.length === 1):
+  Mahlzeiten: sortiert nach (lastUsed ?? updatedAt ?? 0) desc, slice(0, maxPerGroup)
+  Lebensmittel: sortiert nach (updatedAt ?? 0) desc, slice(0, maxPerGroup)
+  Rezepte: immer []
 
-MAHLZEITEN (immer):
-  q === ''  → sortiert nach (lastUsed ?? updatedAt ?? 0) desc, slice(0, maxPerGroup)
-  q !== ''  → filter name.includes(q), slice(0, maxPerGroup)
+MODUS B — Suche (q.length >= 2):
+  Mahlzeiten: filter name.includes(q), slice(0, maxPerGroup)
+  Lebensmittel: filter name.includes(q), slice(0, maxPerGroup)
+  Rezepte: filter name.includes(q), slice(0, maxPerGroup)
 
-REZEPTE (nur wenn q.length >= 2):
-  q.length < 2  → []
-  q.length >= 2 → filter name.includes(q), slice(0, maxPerGroup)
+  Hinweis: 1-Zeichen-Query zeigt Schnellauswahl (kein Filtern bei 1 Zeichen),
+  damit kurze Tippvorgänge kein leeres Ergebnis zeigen.
 
 *Total-Felder enthalten die ungekürzte Treffermenge (vor slice).
 ```
+
+Rückgabe enthält zusätzlich `mode: 'quick' | 'search'` — damit die UI die
+richtigen Gruppen-Label rendern kann.
 
 ### Datei: `tests/unit/calc/trackerSearch.test.js` (NEU)
 
@@ -87,13 +91,13 @@ REZEPTE (nur wenn q.length >= 2):
 
 ```
 filterTrackerSearch
-  ✓  leere Query → Top-3 Favoriten nach updatedAt, keine Rezepte
-  ✓  leere Query → Top-3 Mahlzeiten nach lastUsed
-  ✓  1-Zeichen-Query → Lebensmittel + Mahlzeiten gefiltert, Rezepte weiterhin leer
-  ✓  2-Zeichen-Query → alle 3 Gruppen gefiltert
-  ✓  Lebensmittel-Filter case-insensitiv
-  ✓  Mahlzeiten-Filter case-insensitiv
-  ✓  Rezepte-Filter case-insensitiv
+  ✓  leere Query → mode 'quick', Top-3 Lebensmittel nach updatedAt, keine Rezepte
+  ✓  leere Query → mode 'quick', Top-3 Mahlzeiten nach lastUsed
+  ✓  1-Zeichen-Query → mode 'quick' (Schnellauswahl, kein Filtern), keine Rezepte
+  ✓  2-Zeichen-Query → mode 'search', alle 3 Gruppen gefiltert
+  ✓  Lebensmittel-Filter case-insensitiv (mode 'search')
+  ✓  Mahlzeiten-Filter case-insensitiv (mode 'search')
+  ✓  Rezepte-Filter case-insensitiv (mode 'search')
   ✓  maxPerGroup begrenzt jede Gruppe; *Total enthält echte Gesamtmenge
   ✓  Query ohne Treffer → alle Gruppen leer, alle Totals 0
   ✓  Treffer in nur einer Gruppe → andere Gruppen leer, nicht undefined
@@ -158,19 +162,24 @@ Rendering-Logik:
 1. Suchfeld: placeholder „Suchen…" (type="search")
 
 2. Ergebnisbereich (maxHeight 220px, overflowY auto):
-   - Gruppe „Lebensmittel" wenn foods.length > 0:
-       Gruppenheader (kleine Überschrift)
-       max 3 Einträge: Name + Makros/100g + Click → onSelectFood
-       wenn foodsTotal > 3: Hinweis „X weitere — Suche eingrenzen"
-   - Gruppe „Mahlzeiten" wenn meals.length > 0:
-       max 3 Einträge: Name + Anzahl Items + defaultSlot (als Info-Text)
+
+   MODUS 'quick' (leer oder 1 Zeichen):
+   - Abschnitts-Label „Schnellauswahl" (klein, gedimmt)
+   - Gruppe „Zuletzt genutzte Mahlzeiten" wenn meals.length > 0:
+       max 3 Einträge: Name + Anzahl Items + defaultSlot (Info-Text)
        Click → onApplyMeal(meal)
-       wenn mealsTotal > 3: Hinweis „X weitere — Suche eingrenzen"
-   - Gruppe „Rezepte" wenn recipes.length > 0:
-       max 3 Einträge: Icon + Name + kcal + mealSlot (als Info-Text)
-       Click → onApplyRecipe(recipe)
-       wenn recipesTotal > 3: Hinweis „X weitere — Suche eingrenzen"
-   - Alle 3 leer + query.trim() !== '': „Keine lokalen Treffer."
+       wenn mealsTotal > 3: „X weitere — Suche eingrenzen"
+   - Gruppe „Häufige Lebensmittel" wenn foods.length > 0:
+       max 3 Einträge: Name + Makros/100g
+       Click → onSelectFood(fav)
+       wenn foodsTotal > 3: „X weitere — Suche eingrenzen"
+   - Beide leer: nichts anzeigen (kein Fehlertext — leere Datenbank ist normal)
+
+   MODUS 'search' (ab 2 Zeichen):
+   - Gruppe „Lebensmittel" wenn foods.length > 0
+   - Gruppe „Mahlzeiten" wenn meals.length > 0
+   - Gruppe „Rezepte" wenn recipes.length > 0
+   - Alle leer: „Keine lokalen Treffer."
 
 3. Aktionsbuttons (AUSSERHALB Scroll-Container, immer sichtbar):
    [🔍 In Open Food Facts suchen]  → onOpenOFF(query)
