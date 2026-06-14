@@ -2,7 +2,7 @@ import { html, useState, useEffect } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { Modal } from '../../ui/Modal.js';
 import { RECIPE_MEAL_SLOTS } from '../../data/mealSlots.js';
-import { scaleRecipeMacros } from '../../calc/recipeTracking.js';
+import { scaleRecipeMacros, resolveRecipeSlot } from '../../calc/recipeTracking.js';
 
 function generateId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -20,15 +20,17 @@ function generateId() {
  *   onSave: function,  // (trackerEntry) => void
  * }} props
  */
-export function RecipeToTrackerModal({ open, recipe, onClose, onSave }) {
-  const [slot, setSlot] = useState(RECIPE_MEAL_SLOTS[0]);
+export function RecipeToTrackerModal({ open, recipe, onClose, onSave, mealSlots, defaultSlot }) {
+  const slotsToUse = (mealSlots?.length > 0) ? mealSlots : RECIPE_MEAL_SLOTS;
+
+  const [slot, setSlot] = useState(slotsToUse[0]);
   const [portions, setPortions] = useState('1');
 
   useEffect(() => {
     if (!open || !recipe) return;
-    setSlot(RECIPE_MEAL_SLOTS.includes(recipe.mealSlot) ? recipe.mealSlot : RECIPE_MEAL_SLOTS[0]);
+    setSlot(resolveRecipeSlot(slotsToUse, defaultSlot, recipe.mealSlot));
     setPortions('1');
-  }, [open, recipe]);
+  }, [open, recipe, defaultSlot]);
 
   if (!open || !recipe) return null;
 
@@ -68,7 +70,7 @@ export function RecipeToTrackerModal({ open, recipe, onClose, onSave }) {
           onChange=${e => setSlot(e.target.value)}
           style=${{ ...S.input, marginBottom: '14px' }}
         >
-          ${RECIPE_MEAL_SLOTS.map(s => html`<option key=${s} value=${s}>${s}</option>`)}
+          ${slotsToUse.map(s => html`<option key=${s} value=${s}>${s}</option>`)}
         </select>
 
         <label style=${S.label}>Portionen</label>

@@ -6,6 +6,8 @@ import { getMealTemplate } from '../../data/mealTemplates.js';
 import { distributeMacrosPerMeal } from '../../calc/macros.js';
 import { localDateString } from '../../calc/dates.js';
 import { useSavedMeals } from '../../hooks/useSavedMeals.js';
+import { useRecipes } from '../../hooks/useRecipes.js';
+import { INITIAL_RECIPES } from '../../data/initialRecipes.js';
 import { mealItemsToTrackedFoods } from '../../calc/meals.js';
 import { DayLogList } from './DayLogList.js';
 import { FoodEntryModal } from './FoodEntryModal.js';
@@ -14,6 +16,7 @@ import { MealBuilderModal } from './MealBuilderModal.js';
 import { FavoriteFoodsModal } from './FavoriteFoodsModal.js';
 import { FoodEditorModal } from './FoodEditorModal.js';
 import { FridgeModal } from './FridgeModal.js';
+import { RecipeToTrackerModal } from '../rezepte/RecipeToTrackerModal.js';
 import { useFridge } from '../../hooks/useFridge.js';
 
 function generateId() {
@@ -43,6 +46,10 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
 
   // Favoriten-Mahlzeiten (6b)
   const { meals, loading: mealsLoading, addOrUpdateMeal, removeMeal, markUsed } = useSavedMeals();
+
+  // Rezepte für Universal-Suche
+  const { recipes: customRecipes } = useRecipes();
+  const allRecipes = useMemo(() => [...INITIAL_RECIPES, ...customRecipes], [customRecipes]);
   const [mealsModalOpen, setMealsModalOpen] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [builderMeal, setBuilderMeal] = useState(null); // null = neue Mahlzeit
@@ -55,6 +62,10 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
   const [fridgeModalOpen, setFridgeModalOpen] = useState(false);
   const [foodEditorOpen, setFoodEditorOpen] = useState(false);
   const [editFood, setEditFood] = useState(null); // null = neues Lebensmittel
+
+  // Rezept-Übernahme via Universal-Suche → RecipeToTrackerModal
+  // { recipe, defaultSlot } | null
+  const [trackerRecipe, setTrackerRecipe] = useState(null);
 
   // Mahlzeit-Slots aus aktuellem Tagesplan (dynamisch via getMealTemplate)
   const mealSlots = useMemo(() => {
@@ -113,6 +124,11 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
       await addEntry({ ...f, id: generateId(), timestamp: Date.now() });
     }
     await markUsed(meal);
+  }
+
+  // Rezept-Eintrag aus RecipeToTrackerModal (einzelner TrackedFood-Eintrag)
+  async function handleAddToTracker(trackerEntry) {
+    await addEntry(trackerEntry);
   }
 
   // Datum für den Header formatieren
@@ -202,6 +218,10 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         mealSlots=${mealSlots}
         slotTargets=${slotTargets}
         consumedBySlot=${consumedBySlot}
+        meals=${meals}
+        recipes=${allRecipes}
+        onApplyMeal=${handleApplyMeal}
+        onApplyRecipe=${(recipe, slot) => setTrackerRecipe({ recipe, defaultSlot: slot })}
       />
 
       <${SavedMealsModal}
@@ -253,6 +273,15 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         onAdd=${addFridgeItem}
         onRemove=${removeFridgeItem}
         onEmpty=${emptyFridge}
+      />
+
+      <${RecipeToTrackerModal}
+        open=${!!trackerRecipe}
+        recipe=${trackerRecipe?.recipe}
+        defaultSlot=${trackerRecipe?.defaultSlot}
+        onClose=${() => setTrackerRecipe(null)}
+        onSave=${handleAddToTracker}
+        mealSlots=${mealSlots}
       />
     </div>
   `;

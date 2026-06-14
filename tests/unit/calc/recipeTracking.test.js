@@ -1,5 +1,33 @@
 import { describe, it, expect } from 'vitest';
-import { scaleRecipeMacros, calcIngredientMacros, calcRecipeMacrosFromIngredients, getRecipeMacros, ingredientMacroStatus } from '../../../js/calc/recipeTracking.js';
+import { scaleRecipeMacros, calcIngredientMacros, calcRecipeMacrosFromIngredients, getRecipeMacros, ingredientMacroStatus, resolveRecipeSlot } from '../../../js/calc/recipeTracking.js';
+
+describe('resolveRecipeSlot', () => {
+  const slots = ['Frühstück', 'Mittagessen', 'Abendessen'];
+
+  it('defaultSlot hat höchste Priorität wenn in slotsToUse enthalten', () => {
+    expect(resolveRecipeSlot(slots, 'Mittagessen', 'Abendessen')).toBe('Mittagessen');
+  });
+
+  it('defaultSlot nicht in slotsToUse → Fallback auf recipeMealSlot', () => {
+    expect(resolveRecipeSlot(slots, 'Snack', 'Abendessen')).toBe('Abendessen');
+  });
+
+  it('weder defaultSlot noch recipeMealSlot in slotsToUse → slotsToUse[0]', () => {
+    expect(resolveRecipeSlot(slots, 'Snack', 'Pre-Workout')).toBe('Frühstück');
+  });
+
+  it('kein defaultSlot → recipeMealSlot wenn vorhanden', () => {
+    expect(resolveRecipeSlot(slots, undefined, 'Abendessen')).toBe('Abendessen');
+  });
+
+  it('kein defaultSlot, kein recipeMealSlot → slotsToUse[0]', () => {
+    expect(resolveRecipeSlot(slots, undefined, undefined)).toBe('Frühstück');
+  });
+
+  it('defaultSlot = leerer String → Fallback auf recipeMealSlot', () => {
+    expect(resolveRecipeSlot(slots, '', 'Mittagessen')).toBe('Mittagessen');
+  });
+});
 
 describe('ingredientMacroStatus', () => {
   it('keine Makros hinterlegt → no-macros', () => {

@@ -1,3 +1,13 @@
+/**
+ * Bestimmt den initialen Slot für RecipeToTrackerModal.
+ * Priorität: defaultSlot → recipe.mealSlot → slotsToUse[0]
+ */
+export function resolveRecipeSlot(slotsToUse, defaultSlot, recipeMealSlot) {
+  if (defaultSlot && slotsToUse.includes(defaultSlot)) return defaultSlot;
+  if (recipeMealSlot && slotsToUse.includes(recipeMealSlot)) return recipeMealSlot;
+  return slotsToUse[0];
+}
+
 export const UNIT_GRAM_DEFAULTS = {
   'ml':      1.0,
   'EL':      15,

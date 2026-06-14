@@ -1,7 +1,7 @@
 import { html, useState, useEffect, useMemo } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { Modal } from '../../ui/Modal.js';
-import { FavoritePicker } from './FavoritePicker.js';
+import { UniversalSearchPicker } from './UniversalSearchPicker.js';
 import { OFFSearchPanel } from './OFFSearchPanel.js';
 import { BarcodePanel } from './BarcodePanel.js';
 import { calcTrackedFoodMacros, computeSlotGap } from '../../calc/tracker.js';
@@ -34,7 +34,7 @@ const DEFAULT_MEAL_SLOTS = [
  *   mealSlots?: string[],       // dynamische Slot-Namen aus TrackerTab
  * }} props
  */
-export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry, defaultSlot, mealSlots, slotTargets, consumedBySlot }) {
+export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry, defaultSlot, mealSlots, slotTargets, consumedBySlot, meals, recipes, onApplyMeal, onApplyRecipe }) {
   const isEdit = !!initialEntry;
   // mealSlots?.length statt ?? — leeres Array fällt auf Default zurück
   const slots = mealSlots?.length ? mealSlots : DEFAULT_MEAL_SLOTS;
@@ -53,7 +53,8 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
   const [c100, setC100] = useState('');
   const [f100, setF100] = useState('');
   const [saveFav, setSaveFav] = useState(false);
-  const [searchMode, setSearchMode] = useState(null); // null | 'search' | 'barcode'
+  const [searchMode, setSearchMode] = useState(null);   // null | 'off' | 'barcode'
+  const [searchQuery, setSearchQuery] = useState('');   // zentraler Suchtext
   const [offData, setOffData] = useState(null);        // { categoriesTags, offCode } | null
   const [justSavedName, setJustSavedName] = useState(null); // zuletzt mit „+ weitere" gespeichert
 
@@ -90,6 +91,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
       setF100('');
       setSaveFav(false);
       setSearchMode(null);
+      setSearchQuery('');
       setOffData(null);
       setJustSavedName(null);
     }
@@ -260,30 +262,23 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
         `}
 
         ${!isEdit && html`
-          <label style=${{ ...S.label, marginBottom: '6px' }}>Aus Favoriten</label>
-          <${FavoritePicker} favorites=${favorites} onSelect=${handleFavSelect} />
+          <${UniversalSearchPicker}
+            favorites=${favorites}
+            meals=${meals ?? []}
+            recipes=${recipes ?? []}
+            onSelectFood=${fav => { handleFavSelect(fav); setSearchQuery(''); }}
+            onApplyMeal=${meal => { onApplyMeal?.(meal, slot); onClose(); }}
+            onApplyRecipe=${recipe => { onApplyRecipe?.(recipe, slot); onClose(); }}
+            onOpenOFF=${q => { setSearchQuery(q); setSearchMode('off'); }}
+            onOpenBarcode=${() => setSearchMode('barcode')}
+          />
 
-          <div style=${{ display: 'flex', gap: '6px', margin: '10px 0 8px' }}>
-            <button
-              onClick=${() => setSearchMode(searchMode === 'search' ? null : 'search')}
-              style=${{
-                ...S.btn(searchMode === 'search' ? COLORS.gold : '#1e1e1e', searchMode === 'search' ? '#111' : COLORS.textMuted),
-                flex: 1,
-                fontSize: '11px',
-              }}
-            >🔍 OFD Suche</button>
-            <button
-              onClick=${() => setSearchMode(searchMode === 'barcode' ? null : 'barcode')}
-              style=${{
-                ...S.btn(searchMode === 'barcode' ? COLORS.gold : '#1e1e1e', searchMode === 'barcode' ? '#111' : COLORS.textMuted),
-                flex: 1,
-                fontSize: '11px',
-              }}
-            >🔢 Barcode</button>
-          </div>
-
-          ${searchMode === 'search' && html`
-            <${OFFSearchPanel} onSelect=${handleOFFSelect} onClose=${() => setSearchMode(null)} />
+          ${searchMode === 'off' && html`
+            <${OFFSearchPanel}
+              initialQuery=${searchQuery}
+              onSelect=${handleOFFSelect}
+              onClose=${() => setSearchMode(null)}
+            />
           `}
           ${searchMode === 'barcode' && html`
             <${BarcodePanel}
