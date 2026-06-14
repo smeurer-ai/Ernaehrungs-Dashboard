@@ -20,13 +20,15 @@ function generateId() {
  *   onSave: function,  // (trackerEntry) => void
  * }} props
  */
-export function RecipeToTrackerModal({ open, recipe, onClose, onSave }) {
-  const [slot, setSlot] = useState(RECIPE_MEAL_SLOTS[0]);
+export function RecipeToTrackerModal({ open, recipe, onClose, onSave, mealSlots }) {
+  const slotsToUse = (mealSlots?.length > 0) ? mealSlots : RECIPE_MEAL_SLOTS;
+
+  const [slot, setSlot] = useState(slotsToUse[0]);
   const [portions, setPortions] = useState('1');
 
   useEffect(() => {
     if (!open || !recipe) return;
-    setSlot(RECIPE_MEAL_SLOTS.includes(recipe.mealSlot) ? recipe.mealSlot : RECIPE_MEAL_SLOTS[0]);
+    setSlot(slotsToUse.includes(recipe.mealSlot) ? recipe.mealSlot : slotsToUse[0]);
     setPortions('1');
   }, [open, recipe]);
 
@@ -68,7 +70,7 @@ export function RecipeToTrackerModal({ open, recipe, onClose, onSave }) {
           onChange=${e => setSlot(e.target.value)}
           style=${{ ...S.input, marginBottom: '14px' }}
         >
-          ${RECIPE_MEAL_SLOTS.map(s => html`<option key=${s} value=${s}>${s}</option>`)}
+          ${slotsToUse.map(s => html`<option key=${s} value=${s}>${s}</option>`)}
         </select>
 
         <label style=${S.label}>Portionen</label>
