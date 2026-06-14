@@ -1,4 +1,4 @@
-import { html, useState } from '../../lib.js';
+import { html, useState, useEffect } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { searchOFF, classifyOFFError } from '../../api/openFoodFacts.js';
 
@@ -7,12 +7,15 @@ import { searchOFF, classifyOFFError } from '../../api/openFoodFacts.js';
  * Zeigt Sucheingabe + Ergebnisliste. Bei Produktauswahl → onSelect + onClose.
  *
  * @param {{
- *   onSelect: (product: import('../../api/openFoodFacts.js').OFFProduct) => void,
- *   onClose: () => void,
+ *   onSelect:      (product: import('../../api/openFoodFacts.js').OFFProduct) => void,
+ *   onClose:       () => void,
+ *   initialQuery?: string,  // Suchtext aus dem zentralen Suchfeld vorausfüllen
  * }} props
  */
-export function OFFSearchPanel({ onSelect, onClose }) {
-  const [query, setQuery] = useState('');
+export function OFFSearchPanel({ onSelect, onClose, initialQuery = '' }) {
+  const [query, setQuery] = useState(initialQuery);
+
+  useEffect(() => { setQuery(initialQuery); }, [initialQuery]);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
