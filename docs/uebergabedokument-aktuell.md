@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
 **Zuletzt aktualisiert:** 2026-06-14
-**Stand:** v1.9.1 — **PHASE 5 KOMPLETT** (PR #15) · Review-Fixes (Security/Import-Mode/MealBuilder/HTML) in PR #17
-**App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
-**Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `fix/review-security-data-integrity` → PR #17 (in Review)
-**APP_VERSION:** `1.9.1` · **SCHEMA_VERSION:** `4`
+**Stand:** v1.10.0 — **PHASE 5 KOMPLETT** (PR #15) · Universal-Suche im Tracker-Modal (PR #18)
+**App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html
+**Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard
+**Branch:** `feature/tracker-universal-suche` → PR #18 (in Review)
+**APP_VERSION:** `1.10.0` · **SCHEMA_VERSION:** `4`
 
 ---
 
@@ -38,6 +38,7 @@
 | **Phase 5c — Rezept-Matching** | ✅ | `recipeMatchesFridge` (Hauptzutaten ● vs. Kühlschrank, Substring-Matching beidseitig, 7 Tests) + Filter-Chip „❄ Kühlschrank-passend" im Rezepte-Tab (v1.9.0, PR #15) |
 | **Phase 5d — Vorschläge** | ✅ | `computeGapSuggestions` (11 Tests; Score: Proteindichte g P/100kcal + ⭐Notvorrat +30 + ❄Kühlschrank +30 + 🌙Casein abends +20 − Kalorienbremse bei kcal > 1.3×Lücke); GapSuggestions-Karte im Heute-Tab ab 17 Uhr bei P-Lücke ≥ 10g, Top 4 aus Favoriten + Favoriten-Mahlzeiten, Klartext-Badges (v1.9.0, PR #15) |
 | **Review-Fixes (Security / Datenintegrität)** | ✅ | vitest 1→4.1.8 + esbuild 0.28.1 (0 Vulnerabilities); `importAll()` options-Parameter entfernt (war nie implementiert, Aufrufer nutzte irreführend `mode: 'replace'`); MealBuilder-Validierung: leere Makrofelder (P/KH/F) werden nicht mehr still als 0 akzeptiert; HTML-Kommentare aus 5 htm-Templates entfernt; +1 Merge-Semantik-Regressionstest (v1.9.1, PR #17) |
+| **Universal-Suche im Tracker-Modal** | ⏳ | Zentrales Suchfeld in „Mahlzeit eintragen": Quick-Modus (leer/1 Zeichen) zeigt Schnellauswahl (zuletzt genutzte Mahlzeiten + häufige Lebensmittel); Such-Modus (ab 2 Zeichen) filtert Lebensmittel, Mahlzeiten und Rezepte (inkl. Zutatennamen) gruppiert. OFD + Barcode dauerhaft erreichbar; OFD übernimmt Suchtext. `filterTrackerSearch` (18 Unit-Tests). Slot aus FoodEntryModal gilt immer. (v1.10.0, PR #18) |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung; **Essens-Vorschläge via Claude API** (Rest-Makros + Kühlschrank + Notvorrat als Kontext → konkreter Gericht-Vorschlag; strikt optional mit eigenem API-Key, Wunsch Stephanie 2026-06-10) |
 
 ### Was die App aktuell kann
@@ -216,8 +217,9 @@ tests/unit/calc/leucineFactors.test.js     18 Tests  (Phase 3E: estimateLeucineF
 tests/unit/api/openFoodFacts.test.js       25 Tests  (mapOFFProduct, parseOFFSearchResults, normalizeBarcode, rankOFFResults, classifyOFFError — Task 3)
 tests/unit/calc/matching.test.js            7 Tests  (recipeMatchesFridge — Phase 5c)
 tests/unit/calc/suggestions.test.js        11 Tests  (computeGapSuggestions, isCaseinSource — Phase 5d)
+tests/unit/calc/trackerSearch.test.js      18 Tests  (filterTrackerSearch — quick/search-Modus, Fallbacks, case-insensitiv, Zutaten-Suche)
 ──────────────────────────────────────────────────
-Gesamt                                    341 Tests — alle grün (Stand 2026-06-14, v1.9.1)
+Gesamt                                    359 Tests — alle grün (Stand 2026-06-14, v1.10.0)
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -287,4 +289,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-14 · APP_VERSION 1.9.1 · SCHEMA_VERSION 4 · Phase 5 komplett · Review-Fixes PR #17 in Review · nur noch Phase 6 (AI) offen*
+*Zuletzt aktualisiert: 2026-06-14 · APP_VERSION 1.10.0 · SCHEMA_VERSION 4 · Phase 5 komplett · Universal-Suche PR #18 in Review · nächste große Phase: Woche-Tab + Phase 6 (AI)*
