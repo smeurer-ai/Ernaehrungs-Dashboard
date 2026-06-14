@@ -31,20 +31,17 @@ function itemToForm(item) {
   };
 }
 
-// Formular-Item → berechnete absolute Makros (oder null wenn unvollständig)
+// Formular-Item → berechnete absolute Makros (oder null wenn unvollständig).
+// Alle sechs Felder (Name, Gramm, kcal100, p100, c100, f100) müssen numerisch vorhanden sein –
+// leere Makrofelder werden nicht still als 0 akzeptiert, um Bilanzfehler zu verhindern.
 function formItemMacros(it) {
   const g = parseFloat(it.gramm);
   const k = parseFloat(it.kcal100);
-  if (!it.foodName.trim() || !g || g <= 0 || isNaN(k)) return null;
-  return calcTrackedFoodMacros(
-    {
-      kcal100: k || 0,
-      p100: parseFloat(it.p100) || 0,
-      c100: parseFloat(it.c100) || 0,
-      f100: parseFloat(it.f100) || 0,
-    },
-    g,
-  );
+  const p = parseFloat(it.p100);
+  const c = parseFloat(it.c100);
+  const f = parseFloat(it.f100);
+  if (!it.foodName.trim() || !g || g <= 0 || isNaN(k) || isNaN(p) || isNaN(c) || isNaN(f)) return null;
+  return calcTrackedFoodMacros({ kcal100: k, p100: p, c100: c, f100: f }, g);
 }
 
 const inp = { ...S.input, fontSize: '13px', padding: '8px 10px' };
@@ -119,7 +116,7 @@ export function MealBuilderModal({ open, onClose, onSave, meal, mealSlots = [], 
   function handleSave() {
     const errs = [];
     if (!name.trim()) errs.push('Name ist Pflicht.');
-    if (validCount === 0) errs.push('Mindestens 1 Lebensmittel mit Name, Gramm und kcal/100g ist Pflicht.');
+    if (validCount === 0) errs.push('Mindestens 1 vollständiges Lebensmittel erforderlich: Name, Gramm, kcal/100g sowie Protein, Kohlenhydrate und Fett.');
     if (errs.length) { setErrors(errs); return; }
     setErrors([]);
 
@@ -280,7 +277,7 @@ export function MealBuilderModal({ open, onClose, onSave, meal, mealSlots = [], 
             <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginTop: '3px', paddingLeft: '2px' }}>
               ${m
                 ? html`<span style=${{ fontSize: '11px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>→ ${m.kcal} kcal · ${m.p}g P · ${m.c}g KH · ${m.f}g F</span>`
-                : html`<span style=${{ fontSize: '11px', color: '#c8a830', fontFamily: FONTS.mono }}>⚠ zählt nicht mit: Gramm + kcal/100g angeben</span>`}
+                : html`<span style=${{ fontSize: '11px', color: '#c8a830', fontFamily: FONTS.mono }}>⚠ zählt nicht mit – alle Felder ausfüllen: Gramm, kcal/100g, P, KH, F</span>`}
               <button
                 onClick=${() => setDetailsIdx(detailsIdx === i ? null : i)}
                 style=${{ background: 'none', border: 'none', color: COLORS.textMuted, cursor: 'pointer', fontSize: '10px', fontFamily: FONTS.mono, padding: '2px 4px', flexShrink: 0 }}

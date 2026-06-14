@@ -76,11 +76,6 @@ export async function exportAll() {
 // ---------------------------------------------------------------------------
 
 /**
- * @typedef {Object} ImportOptions
- * @property {'merge'} [mode] - 'merge' führt importierte Daten per Schlüssel mit vorhandenen zusammen
- */
-
-/**
  * @typedef {Object} ImportResult
  * @property {boolean} ok
  * @property {string[]} warnings
@@ -88,16 +83,15 @@ export async function exportAll() {
  */
 
 /**
- * Importiert Daten aus einer JSON-Datei.
+ * Importiert Daten aus einer JSON-Datei (immer Merge-Semantik, kein Replace).
  * - Versions-Check: schemaVersion in Datei > eigene → Error
  * - claudeApiKey wird aus importierten Daten ignoriert (lokal gesetzter bleibt)
  * - Schreibt Profil/Settings/UiState nach localStorage; log/week/recipesCustom/foodsCustom
- *   werden per Schlüssel in IndexedDB zusammengeführt (Merge, kein Ersetzen)
+ *   werden per Schlüssel in IndexedDB zusammengeführt (Upsert, bestehende Daten bleiben)
  * @param {File} file
- * @param {ImportOptions} [options]
  * @returns {Promise<ImportResult>}
  */
-export async function importAll(file, options = { mode: 'merge' }) {
+export async function importAll(file) {
   const warnings = [];
 
   try {

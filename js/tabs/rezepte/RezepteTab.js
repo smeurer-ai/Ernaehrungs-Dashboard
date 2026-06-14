@@ -60,7 +60,6 @@ export function RezepteTab() {
   return html`
     <div style=${S.content}>
 
-      <!-- Header mit Titel + Neu-Button -->
       <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
         <div style=${{ ...S.cardTitle, marginBottom: 0 }}>Rezepte</div>
         <button
@@ -69,7 +68,6 @@ export function RezepteTab() {
         >+ Eigenes</button>
       </div>
 
-      <!-- Suchfeld -->
       <input
         type="search"
         value=${query}
@@ -78,7 +76,6 @@ export function RezepteTab() {
         style=${{ ...S.input, width: '100%', marginBottom: '8px', boxSizing: 'border-box' }}
       />
 
-      <!-- Kühlschrank-Filter (Phase 5c) -->
       <button
         onClick=${() => setFridgeOnly(v => !v)}
         style=${{
@@ -95,7 +92,6 @@ export function RezepteTab() {
         </div>
       `}
 
-      <!-- Initial-Rezepte -->
       ${filteredInitial.map(r => html`
         <${RecipeCard}
           key=${r.id}
@@ -107,7 +103,6 @@ export function RezepteTab() {
         />
       `)}
 
-      <!-- Custom-Rezepte (nach IndexedDB-Load) -->
       ${!loading && filteredCustom.length > 0 && html`
         <div style=${{ ...S.cardTitle, marginTop: '10px', marginBottom: '8px' }}>Eigene Rezepte</div>
         ${filteredCustom.map(r => html`
@@ -124,7 +119,6 @@ export function RezepteTab() {
         `)}
       `}
 
-      <!-- Keine Treffer -->
       ${noResults && html`
         <div style=${{ fontSize: '12px', color: COLORS.textMuted, fontFamily: FONTS.mono, padding: '16px 0', textAlign: 'center' }}>
           Kein Rezept gefunden.

@@ -122,7 +122,6 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
 
   return html`
     <div style=${S.content}>
-      <!-- Header -->
       <div style=${{ marginBottom: '14px' }}>
         <div style=${{ fontSize: '11px', color: COLORS.textMuted, fontFamily: FONTS.mono }}>
           ${dateLabel}
@@ -138,7 +137,6 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         </div>
       </div>
 
-      <!-- Schnellzugriff: Favoriten-Mahlzeiten (6b) + Eigene Lebensmittel (7) -->
       <div style=${{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
         <button
           onClick=${() => setMealsModalOpen(true)}
@@ -172,7 +170,6 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         </button>
       </div>
 
-      <!-- Log-Liste -->
       ${loading
         ? html`<div style=${{ color: COLORS.textMuted, fontSize: '12px', textAlign: 'center', padding: '24px' }}>Lade…</div>`
         : html`
@@ -186,7 +183,6 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         `
       }
 
-      <!-- Add-Button (wenn bereits Einträge vorhanden) -->
       ${!loading && entries.length > 0 && html`
         <button
           onClick=${() => openAddModal(null)}
@@ -196,7 +192,6 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         </button>
       `}
 
-      <!-- Eingabe-Modal -->
       <${FoodEntryModal}
         open=${modalOpen}
         onClose=${() => setModalOpen(false)}

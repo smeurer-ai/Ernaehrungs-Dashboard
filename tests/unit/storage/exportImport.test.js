@@ -158,6 +158,28 @@ describe('exportAll / importAll — meals (Favoriten-Mahlzeiten)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// importAll — Merge-Semantik (Regressions-Schutz)
+// ---------------------------------------------------------------------------
+
+describe('importAll — immer Merge, kein Replace', () => {
+  it('schreibt importierte Einträge per Upsert, ohne vorhandene zu löschen', async () => {
+    const newEntry = { date: '2026-06-02', entries: [], createdAt: 2000, updatedAt: 2000 };
+    const file = new Blob([JSON.stringify({
+      exportedAt: Date.now(), appVersion: '1.9.1', schemaVersion: 4,
+      data: { profile: null, settings: null, uiState: null, log: [newEntry] },
+    })], { type: 'application/json' });
+
+    const result = await importAll(file);
+
+    expect(result.ok).toBe(true);
+    // saveLogEntry wird per Upsert aufgerufen – kein Löschen vorhandener Daten
+    expect(vi.mocked(idb.saveLogEntry)).toHaveBeenCalledWith(newEntry);
+    // getAllLogs wird NICHT aufgerufen – Replace würde erst alle laden und dann löschen
+    expect(vi.mocked(idb.getAllLogs)).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // exportAll
 // ---------------------------------------------------------------------------
 
