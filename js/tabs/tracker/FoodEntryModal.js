@@ -267,7 +267,7 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
             meals=${meals ?? []}
             recipes=${recipes ?? []}
             onSelectFood=${fav => { handleFavSelect(fav); setSearchQuery(''); }}
-            onApplyMeal=${meal => { onApplyMeal?.(meal); onClose(); }}
+            onApplyMeal=${meal => { onApplyMeal?.(meal, slot); onClose(); }}
             onApplyRecipe=${recipe => { onApplyRecipe?.(recipe); onClose(); }}
             onOpenOFF=${q => { setSearchQuery(q); setSearchMode('off'); }}
             onOpenBarcode=${() => setSearchMode('barcode')}
