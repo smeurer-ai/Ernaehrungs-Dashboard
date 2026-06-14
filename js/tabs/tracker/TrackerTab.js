@@ -64,6 +64,7 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
   const [editFood, setEditFood] = useState(null); // null = neues Lebensmittel
 
   // Rezept-Übernahme via Universal-Suche → RecipeToTrackerModal
+  // { recipe, defaultSlot } | null
   const [trackerRecipe, setTrackerRecipe] = useState(null);
 
   // Mahlzeit-Slots aus aktuellem Tagesplan (dynamisch via getMealTemplate)
@@ -220,7 +221,7 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
         meals=${meals}
         recipes=${allRecipes}
         onApplyMeal=${handleApplyMeal}
-        onApplyRecipe=${recipe => setTrackerRecipe(recipe)}
+        onApplyRecipe=${(recipe, slot) => setTrackerRecipe({ recipe, defaultSlot: slot })}
       />
 
       <${SavedMealsModal}
@@ -276,7 +277,8 @@ export function TrackerTab({ dayType, trainingTime, wakeUpTime, trainingDuration
 
       <${RecipeToTrackerModal}
         open=${!!trackerRecipe}
-        recipe=${trackerRecipe}
+        recipe=${trackerRecipe?.recipe}
+        defaultSlot=${trackerRecipe?.defaultSlot}
         onClose=${() => setTrackerRecipe(null)}
         onSave=${handleAddToTracker}
         mealSlots=${mealSlots}

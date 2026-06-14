@@ -2,7 +2,7 @@ import { html, useState, useEffect } from '../../lib.js';
 import { S, COLORS, FONTS } from '../../ui/theme.js';
 import { Modal } from '../../ui/Modal.js';
 import { RECIPE_MEAL_SLOTS } from '../../data/mealSlots.js';
-import { scaleRecipeMacros } from '../../calc/recipeTracking.js';
+import { scaleRecipeMacros, resolveRecipeSlot } from '../../calc/recipeTracking.js';
 
 function generateId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -20,7 +20,7 @@ function generateId() {
  *   onSave: function,  // (trackerEntry) => void
  * }} props
  */
-export function RecipeToTrackerModal({ open, recipe, onClose, onSave, mealSlots }) {
+export function RecipeToTrackerModal({ open, recipe, onClose, onSave, mealSlots, defaultSlot }) {
   const slotsToUse = (mealSlots?.length > 0) ? mealSlots : RECIPE_MEAL_SLOTS;
 
   const [slot, setSlot] = useState(slotsToUse[0]);
@@ -28,9 +28,9 @@ export function RecipeToTrackerModal({ open, recipe, onClose, onSave, mealSlots 
 
   useEffect(() => {
     if (!open || !recipe) return;
-    setSlot(slotsToUse.includes(recipe.mealSlot) ? recipe.mealSlot : slotsToUse[0]);
+    setSlot(resolveRecipeSlot(slotsToUse, defaultSlot, recipe.mealSlot));
     setPortions('1');
-  }, [open, recipe]);
+  }, [open, recipe, defaultSlot]);
 
   if (!open || !recipe) return null;
 
