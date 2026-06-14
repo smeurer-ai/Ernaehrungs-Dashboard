@@ -1,6 +1,6 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
 **Zuletzt aktualisiert:** 2026-06-14
-**Stand:** v1.9.1 — **PHASE 5 KOMPLETT** (PR #15) · Review-Fixes (Security/Import-Mode/MealBuilder/HTML) in PR #17  
+**Stand:** v1.9.1 — **PHASE 5 KOMPLETT** (PR #15) · Review-Fixes (Security/Import-Mode/MealBuilder/HTML) in PR #17
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
 **Branch:** `fix/review-security-data-integrity` → PR #17 (in Review)

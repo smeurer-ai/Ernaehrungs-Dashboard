@@ -24,7 +24,6 @@ export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onE
         </div>
       </div>
 
-      <!-- Expanded detail -->
       ${isExpanded && html`
         <div style=${{ marginTop: '12px', borderTop: `1px solid ${COLORS.borderLight}`, paddingTop: '12px' }}>
 
