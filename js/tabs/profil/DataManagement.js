@@ -27,7 +27,7 @@ export function DataManagement({ settings, onSettingsUpdate }) {
     if (!confirmed) return;
     setImporting(true);
     setImportStatus(null);
-    const result = await importAll(file, { mode: 'replace' });
+    const result = await importAll(file);
     setImporting(false);
     if (result.ok) {
       setImportStatus({ type: 'success', message: 'Import erfolgreich. Seite wird neu geladen…' });

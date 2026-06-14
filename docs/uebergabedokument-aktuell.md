@@ -1,10 +1,10 @@
 # Übergabedokument — Ernährungs-Dashboard PWA
-**Zuletzt aktualisiert:** 2026-06-10
-**Stand:** v1.9.0 live — **PHASE 5 KOMPLETT** (PR #15) · alle Phasen vor Phase 6 (AI) erledigt  
+**Zuletzt aktualisiert:** 2026-06-14
+**Stand:** v1.9.1 — **PHASE 5 KOMPLETT** (PR #15) · Review-Fixes (Security/Import-Mode/MealBuilder/HTML) in PR #17
 **App-URL:** https://smeurer-ai.github.io/Ernaehrungs-Dashboard/ernaehrung.html  
 **Repository:** https://github.com/smeurer-ai/Ernaehrungs-Dashboard  
-**Branch:** `master` synchron · Vorschlags-Karte von Stephanie live getestet (2026-06-10)
-**APP_VERSION:** `1.9.0` · **SCHEMA_VERSION:** `4`
+**Branch:** `fix/review-security-data-integrity` → PR #17 (in Review)
+**APP_VERSION:** `1.9.1` · **SCHEMA_VERSION:** `4`
 
 ---
 
@@ -37,6 +37,7 @@
 | **Phase 5b — Kühlschrank** | ✅ | Schema **v4** (`fridge`-Store, Migration getestet); „❄ Kühlschrank" im Tracker-Schnellzugriff: Favoriten-Vorschlag/Freitext, optionale Gramm, Entfernen, Leeren; Hook `useFridge`; Export/Import (v1.8.0, PR #14, Spec `2026-06-10-phase-5-kuehlschrank-vorschlaege.md`) |
 | **Phase 5c — Rezept-Matching** | ✅ | `recipeMatchesFridge` (Hauptzutaten ● vs. Kühlschrank, Substring-Matching beidseitig, 7 Tests) + Filter-Chip „❄ Kühlschrank-passend" im Rezepte-Tab (v1.9.0, PR #15) |
 | **Phase 5d — Vorschläge** | ✅ | `computeGapSuggestions` (11 Tests; Score: Proteindichte g P/100kcal + ⭐Notvorrat +30 + ❄Kühlschrank +30 + 🌙Casein abends +20 − Kalorienbremse bei kcal > 1.3×Lücke); GapSuggestions-Karte im Heute-Tab ab 17 Uhr bei P-Lücke ≥ 10g, Top 4 aus Favoriten + Favoriten-Mahlzeiten, Klartext-Badges (v1.9.0, PR #15) |
+| **Review-Fixes (Security / Datenintegrität)** | ✅ | vitest 1→4.1.8 + esbuild 0.28.1 (0 Vulnerabilities); `importAll()` options-Parameter entfernt (war nie implementiert, Aufrufer nutzte irreführend `mode: 'replace'`); MealBuilder-Validierung: leere Makrofelder (P/KH/F) werden nicht mehr still als 0 akzeptiert; HTML-Kommentare aus 5 htm-Templates entfernt; +1 Merge-Semantik-Regressionstest (v1.9.1, PR #17) |
 | **Phase 6 — AI** | ⏳ | Claude Vision, Foto-Rezepterkennung; **Essens-Vorschläge via Claude API** (Rest-Makros + Kühlschrank + Notvorrat als Kontext → konkreter Gericht-Vorschlag; strikt optional mit eigenem API-Key, Wunsch Stephanie 2026-06-10) |
 
 ### Was die App aktuell kann
@@ -208,7 +209,7 @@ tests/unit/calc/dates.test.js               6 Tests  (localDateString — TS-08,
 tests/unit/security/htmlSecurity.test.js    4 Tests  (CDN-Blocklist + CSP-Härtung)
 tests/unit/storage/migrations.test.js       9 Tests  (Schema v3 + v4 Migration)
 tests/unit/storage/indexeddb.test.js        8 Tests  (CRUD recipesCustom — saveCustomRecipe, getAllCustomRecipes, deleteCustomRecipe)
-tests/unit/storage/exportImport.test.js    21 Tests  (Export log/week/foodsCustom/recipesCustom/meals/fridge, API-Key nie im Export, Import-Merge, Altdaten-Robustheit)
+tests/unit/storage/exportImport.test.js    22 Tests  (Export log/week/foodsCustom/recipesCustom/meals/fridge, API-Key nie im Export, Import-Merge, Altdaten-Robustheit, Merge-Semantik-Regression)
 tests/unit/calc/meals.test.js               8 Tests  (computeMealTotals, mealItemsToTrackedFoods)
 tests/unit/data/initialRecipes.test.js      8 Tests  (Struktur aller 8 Rezepte)
 tests/unit/calc/leucineFactors.test.js     18 Tests  (Phase 3E: estimateLeucineFactor, computeMpsFields)
@@ -216,7 +217,7 @@ tests/unit/api/openFoodFacts.test.js       25 Tests  (mapOFFProduct, parseOFFSea
 tests/unit/calc/matching.test.js            7 Tests  (recipeMatchesFridge — Phase 5c)
 tests/unit/calc/suggestions.test.js        11 Tests  (computeGapSuggestions, isCaseinSource — Phase 5d)
 ──────────────────────────────────────────────────
-Gesamt                                    340 Tests — alle grün (Stand 2026-06-10, v1.9.0)
+Gesamt                                    341 Tests — alle grün (Stand 2026-06-14, v1.9.1)
 ```
 
 Ausführen: `npm test` im Projekt-Root.
@@ -286,4 +287,4 @@ Ausführen: `npm test` im Projekt-Root.
 
 ---
 
-*Zuletzt aktualisiert: 2026-06-10 · APP_VERSION 1.9.0 · SCHEMA_VERSION 4 · Phase 5 komplett · nur noch Phase 6 (AI) offen*
+*Zuletzt aktualisiert: 2026-06-14 · APP_VERSION 1.9.1 · SCHEMA_VERSION 4 · Phase 5 komplett · Review-Fixes PR #17 in Review · nur noch Phase 6 (AI) offen*

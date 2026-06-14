@@ -205,12 +205,10 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
   return html`
     <${Modal} open=${open} onClose=${onClose}>
       <div style=${{ padding: '4px 0' }}>
-        <!-- Titel -->
         <div style=${{ ...S.cardTitle, fontSize: '12px', marginBottom: '14px' }}>
           ${isEdit ? 'Eintrag bearbeiten' : 'Mahlzeit eintragen'}
         </div>
 
-        <!-- Mahlzeit-Slot -->
         <label style=${S.label}>Mahlzeit</label>
         <select
           value=${slot}
@@ -261,7 +259,6 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
           </div>
         `}
 
-        <!-- Favoriten-Picker (nur im Neueingabe-Modus) -->
         ${!isEdit && html`
           <label style=${{ ...S.label, marginBottom: '6px' }}>Aus Favoriten</label>
           <${FavoritePicker} favorites=${favorites} onSelect=${handleFavSelect} />
@@ -317,7 +314,6 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
           }}>— oder manuell eingeben —</div>
         `}
 
-        <!-- Name -->
         <label style=${S.label}>Name</label>
         <input
           type="text"
@@ -327,7 +323,6 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
           style=${{ ...S.input, marginBottom: '10px' }}
         />
 
-        <!-- Gramm -->
         <label style=${S.label}>Menge (g)</label>
         <input
           type="number"
@@ -338,7 +333,6 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
           style=${{ ...S.input, marginBottom: '10px' }}
         />
 
-        <!-- Makros pro 100g -->
         <label style=${{ ...S.label, marginBottom: '6px' }}>Makros pro 100g</label>
         <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
           ${[
@@ -361,7 +355,6 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
           `)}
         </div>
 
-        <!-- Vorschau -->
         ${preview && html`
           <div style=${{
             background: '#1a1a12',
@@ -377,7 +370,6 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
           </div>
         `}
 
-        <!-- Als Favorit speichern -->
         <label style=${{
           display: 'flex',
           alignItems: 'center',
@@ -397,7 +389,6 @@ export function FoodEntryModal({ open, onClose, onSave, favorites, initialEntry,
           Als Favorit speichern
         </label>
 
-        <!-- Buttons -->
         ${!isEdit && html`
           <button
             onClick=${() => handleSave(true)}

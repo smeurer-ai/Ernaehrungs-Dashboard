@@ -5,7 +5,6 @@ export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onE
   return html`
     <div style=${{ ...S.card, cursor: 'pointer' }} onClick=${onToggle}>
 
-      <!-- Collapsed header: immer sichtbar -->
       <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style=${{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style=${{ fontSize: '22px' }}>${recipe.icon ?? '🍽️'}</span>
@@ -25,7 +24,6 @@ export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onE
         </div>
       </div>
 
-      <!-- Expanded detail -->
       ${isExpanded && html`
         <div style=${{ marginTop: '12px', borderTop: `1px solid ${COLORS.borderLight}`, paddingTop: '12px' }}>
 
@@ -67,7 +65,6 @@ export function RecipeCard({ recipe, isExpanded, onToggle, isCustom = false, onE
             </div>
           `}
 
-          <!-- Makro-Leiste -->
           <div style=${{ display: 'flex', gap: '12px', fontFamily: FONTS.mono, fontSize: '13px' }}>
             <span style=${{ color: COLORS.gold, fontWeight: 700 }}>${recipe.kcal} kcal</span>
             <span style=${{ color: '#a8d8a8' }}>${recipe.protein}g P</span>

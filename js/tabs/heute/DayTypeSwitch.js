@@ -29,7 +29,6 @@ export function DayTypeSwitch({ dayType, trainingTime, trainingDurationMin, onDa
 
   return html`
     <div style=${S.card}>
-      <!-- Trainingstag / Ruhetag Toggle -->
       <div style=${{ display: 'flex', gap: '8px', marginBottom: dayType === 'training' ? '14px' : '0' }}>
         <button style=${S.toggle(dayType === 'training')} onClick=${() => onDayTypeChange('training')}>
           💪 Trainingstag
@@ -39,7 +38,6 @@ export function DayTypeSwitch({ dayType, trainingTime, trainingDurationMin, onDa
         </button>
       </div>
 
-      <!-- Trainingszeit + Trainingsdauer (nur bei Trainingstag) -->
       ${dayType === 'training' && html`
         <div>
           <label style=${{
@@ -76,7 +74,6 @@ export function DayTypeSwitch({ dayType, trainingTime, trainingDurationMin, onDa
             `)}
           </select>
 
-          <!-- Vorschau Pre/Post relativ zur gewählten Zeit und Dauer -->
           <div style=${{
             display: 'flex', gap: '16px', marginTop: '8px',
             fontSize: '11px', color: COLORS.textMuted, fontFamily: FONTS.mono,
